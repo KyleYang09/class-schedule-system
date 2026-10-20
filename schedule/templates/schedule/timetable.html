@@ -1,0 +1,49 @@
+{% extends 'schedule/base.html' %}
+{% load static %}
+{% block title %}{% if current %}{{ current }}・{% endif %}{% endblock %}
+{% block content %}
+<div class="layout">
+  <aside class="picker" aria-label="{% if kind == 'class' %}選擇班級{% else %}選擇教師{% endif %}">
+    <h2 class="picker__title">{% if kind == 'class' %}班級{% else %}教師{% endif %}</h2>
+    <label class="sr-only" for="picker-filter">搜尋{% if kind == 'class' %}班級{% else %}教師{% endif %}</label>
+    <input id="picker-filter" class="picker__filter" type="search" autocomplete="off"
+           placeholder="搜尋{% if kind == 'class' %}班級{% else %}教師姓名{% endif %}" data-filter-target="#picker-list">
+    <ul id="picker-list" class="picker__list">
+      {% for item in items %}
+        <li>
+          <a href="{% if kind == 'class' %}{% url 'class_timetable' item.pk %}{% else %}{% url 'teacher_timetable' item.pk %}{% endif %}"
+             {% if item.pk == current.pk %}aria-current="page"{% endif %}>{{ item.name }}</a>
+        </li>
+      {% empty %}
+        <li class="picker__empty">尚無資料</li>
+      {% endfor %}
+    </ul>
+    <p class="picker__empty" id="picker-none" hidden>找不到符合的{% if kind == 'class' %}班級{% else %}教師{% endif %}</p>
+  </aside>
+
+  <section class="content">
+    {% if current %}
+      <header class="content__head">
+        <h1>{{ current.name }}<span>{% if kind == 'class' %}課表{% else %}授課表{% endif %}</span></h1>
+        {% if lesson_count %}
+          <p class="meta">共 {{ course_count }} 門課、每週 {{ lesson_count }} 節{% if grid.has_weekend %}，含週末加開{% endif %}</p>
+        {% endif %}
+      </header>
+      {% if lesson_count %}
+        {% include 'schedule/_grid.html' with label=current.name %}
+      {% else %}
+        <div class="empty">
+          <h2>還沒有安排任何課程</h2>
+          <p>{% if kind == 'class' %}這個班級{% else %}這位教師{% endif %}目前沒有上課時段。可以到「資料管理」新增課程與時段。</p>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="empty">
+        <h2>還沒有{% if kind == 'class' %}班級{% else %}教師{% endif %}資料</h2>
+        <p>請先到「資料管理」建立資料,或在終端機執行 <code>python manage.py seed_demo_data</code> 載入示範資料。</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'schedule/js/filter.js' %}"></script>{% endblock %}

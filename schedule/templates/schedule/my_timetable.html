@@ -1,0 +1,35 @@
+{% extends 'schedule/base.html' %}
+{% load static %}
+{% block title %}我的課表・{% endblock %}
+{% block content %}
+<div class="layout" id="my-app">
+  <aside class="picker" aria-label="加入課程">
+    <h2 class="picker__title">加入課程</h2>
+    <label class="picker__label" for="my-class">先選擇班級</label>
+    <select id="my-class" class="field"></select>
+    <ul id="my-courses" class="course-list"></ul>
+  </aside>
+
+  <section class="content">
+    <header class="content__head">
+      <h1>我的課表</h1>
+      <p class="meta" id="my-summary" aria-live="polite"></p>
+    </header>
+    <div id="my-conflicts" class="notice notice--warn" role="alert" hidden></div>
+    <div id="my-empty" class="empty" hidden>
+      <h2>還沒有加入任何課程</h2>
+      <p>從左邊選一個班級,勾選想修的課,就會出現在這裡。課表只存在這個瀏覽器,不需要登入。</p>
+    </div>
+    <div id="my-grid"></div>
+    <div id="my-selected" class="selected" hidden>
+      <div class="selected__head">
+        <h2>已加入的課程</h2>
+        <button type="button" class="btn btn--quiet" id="my-clear">全部移除</button>
+      </div>
+      <ul id="my-selected-list"></ul>
+    </div>
+  </section>
+</div>
+{{ data|json_script:"timetable-data" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'schedule/js/my_timetable.js' %}"></script>{% endblock %}

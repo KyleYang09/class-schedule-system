@@ -1,0 +1,14 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | 課表維護系統{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'schedule/css/admin.css' %}">{% endblock %}
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}">課表維護系統</a></div>
+{% endblock %}
+{% block usertools %}
+<div id="user-tools">
+  <a class="back-to-site" href="{% url 'home' %}">回到課表</a>
+  {{ block.super }}
+</div>
+{% endblock %}
+{% block nav-global %}{% endblock %}

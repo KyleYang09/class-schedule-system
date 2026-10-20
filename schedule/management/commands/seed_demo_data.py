@@ -34,8 +34,7 @@ COURSES = {
 
 SATURDAY_EXTRA = [('企管二甲', '財務管理', 6, '2', 'B201')]
 
-SLOTS_PER_COURSE = 2
-WEEKDAYS = [1, 2, 3, 4, 5]
+DAY_PAIRS = [(1, 4), (2, 5), (1, 3), (2, 4), (3, 5)]
 DEMO_USERNAME = 'admin'
 DEMO_PASSWORD = 'demo1234'
 
@@ -62,9 +61,11 @@ class Command(BaseCommand):
             for key in ('class_group_id', 'teacher_id', 'room_id')
         }
 
-        for offset, (class_name, courses) in enumerate(COURSES.items()):
+        period_list = list(periods.values())
+        room_list = list(rooms.values())
+        for class_index, (class_name, courses) in enumerate(COURSES.items()):
             class_group = ClassGroup.objects.get_or_create(name=class_name)[0]
-            for course_name, teacher_index in courses:
+            for course_index, (course_name, teacher_index) in enumerate(courses):
                 course, _ = Course.objects.get_or_create(
                     class_group=class_group,
                     name=course_name,
@@ -72,25 +73,22 @@ class Command(BaseCommand):
                 )
                 if course.slots.exists():
                     continue
-                days = WEEKDAYS[offset % 5:] + WEEKDAYS[:offset % 5]
-                used_days = set()
-                for _ in range(SLOTS_PER_COURSE):
-                    slot_key = next(
-                        (day, period, room)
-                        for day in days
-                        if day not in used_days
-                        for period in periods.values()
-                        for room in rooms.values()
+                shift = class_index * 2 + course_index * 3
+                candidate_periods = period_list[shift % 9:] + period_list[:shift % 9]
+                candidate_rooms = room_list[class_index % 8:] + room_list[:class_index % 8]
+                for day in DAY_PAIRS[(class_index + course_index) % len(DAY_PAIRS)]:
+                    period, room = next(
+                        (period, room)
+                        for period in candidate_periods
+                        for room in candidate_rooms
                         if (class_group.id, day, period.id) not in busy['class_group_id']
                         and (course.teacher_id, day, period.id) not in busy['teacher_id']
                         and (room.id, day, period.id) not in busy['room_id']
                     )
-                    day, period, room = slot_key
                     Slot.objects.create(course=course, weekday=day, period=period, room=room)
                     busy['class_group_id'].add((class_group.id, day, period.id))
                     busy['teacher_id'].add((course.teacher_id, day, period.id))
                     busy['room_id'].add((room.id, day, period.id))
-                    used_days.add(day)
 
         for class_name, course_name, day, period_code, room_name in SATURDAY_EXTRA:
             course = Course.objects.get(class_group__name=class_name, name=course_name)

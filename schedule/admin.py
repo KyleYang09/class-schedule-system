@@ -2,6 +2,10 @@ from django.contrib import admin
 
 from .models import ClassGroup, Course, Period, Room, Slot, Teacher
 
+admin.site.site_header = '課表維護系統'
+admin.site.site_title = '課表維護系統'
+admin.site.index_title = '資料管理'
+
 admin.site.register([ClassGroup, Teacher, Room, Period])
 
 
