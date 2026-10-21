@@ -1,6 +1,11 @@
 (function () {
   const STORAGE_KEY = 'schedule.my.courses';
-  const TINT_COUNT = 4;
+  const FILL_COUNT = 4;
+  const TILE_HEIGHT = 84;
+  const TILE_GAP = 8;
+  const TILE_PADDING = 28;
+  const CHAR_HEIGHT = 22;
+  const SMALL_CHAR_HEIGHT = 16;
   const data = JSON.parse(document.getElementById('timetable-data').textContent);
   const courseById = new Map(data.courses.map((course) => [course.id, course]));
   const periodById = new Map(data.periods.map((period) => [period.id, period]));
@@ -98,34 +103,82 @@
     return cells;
   }
 
+  function textLength(text, unit) {
+    return Array.from(text).reduce((sum, char) => sum + unit * (char.charCodeAt(0) < 128 ? 0.55 : 1), 0);
+  }
+
+  function fitsVertically(name, smallTexts, span) {
+    if (span < 2) return false;
+    const height = span * TILE_HEIGHT + (span - 1) * TILE_GAP - TILE_PADDING;
+    return textLength(name, CHAR_HEIGHT) <= height && smallTexts.every((text) => text.length * SMALL_CHAR_HEIGHT <= height);
+  }
+
   function renderGrid(cells) {
     const days = data.weekdays.filter((day) => day.number <= 5 || Array.from(cells.keys()).some((key) => key.startsWith(`${day.number}-`)));
-    const wrap = el('div', 'grid-wrap');
+    const wrap = el('div', 'sheet');
     wrap.setAttribute('role', 'region');
     wrap.setAttribute('aria-label', '我的課表');
     wrap.tabIndex = 0;
     const table = el('table', 'grid');
-    const head = el('tr');
-    head.append(Object.assign(el('th', 'grid__corner', '節次'), { scope: 'col' }));
-    days.forEach((day) => head.append(Object.assign(el('th', '', day.label), { scope: 'col' })));
     const thead = el('thead');
+    const head = el('tr');
+    head.append(Object.assign(el('th', 'grid__corner'), { scope: 'col' }));
+    days.forEach((day) => head.append(Object.assign(el('th', 'tile', day.label), { scope: 'col' })));
     thead.append(head);
     table.append(thead);
+
     const body = el('tbody');
-    data.periods.forEach((period) => {
+    const skipped = new Set();
+    const entriesAt = (day, index) => (data.periods[index] ? cells.get(`${day}-${data.periods[index].id}`) || [] : []);
+
+    data.periods.forEach((period, index) => {
+      if (period.breakLabel) {
+        const gap = el('tr', 'grid__break');
+        gap.append(Object.assign(el('th', '', period.breakLabel), { scope: 'row' }));
+        const note = el('td', '', period.breakTime);
+        note.colSpan = days.length;
+        gap.append(note);
+        body.append(gap);
+      }
       const row = el('tr');
-      const header = Object.assign(el('th', 'grid__period'), { scope: 'row' });
-      header.append(el('b', '', period.code), el('small', '', `${period.start}–${period.end}`));
+      const header = Object.assign(el('th', 'tile grid__period'), { scope: 'row' });
+      const time = el('small');
+      time.append(period.start, document.createElement('br'), period.end);
+      header.append(el('b', '', period.code), time);
       row.append(header);
+
       days.forEach((day) => {
-        const cell = el('td');
-        const entries = cells.get(`${day.number}-${period.id}`) || [];
-        entries.forEach(({ course, slot }) => {
-          const lesson = el('div', `lesson tint-${course.id % TINT_COUNT}${entries.length > 1 ? ' lesson--conflict' : ''}`);
-          if (entries.length > 1) lesson.append(el('em', 'lesson__flag', '衝突'));
-          lesson.append(el('strong', '', course.name), el('span', '', `${course.className}・${course.teacher}`), el('span', '', slot.room));
-          cell.append(lesson);
-        });
+        if (skipped.has(`${day.number}-${index}`)) return;
+        const entries = entriesAt(day.number, index);
+        const cell = el('td', 'tile');
+        if (entries.length === 0) {
+          cell.classList.add('tile--empty');
+        } else if (entries.length === 1) {
+          const { course, slot } = entries[0];
+          let span = 1;
+          while (
+            !data.periods[index + span]?.breakLabel &&
+            entriesAt(day.number, index + span).length === 1 &&
+            entriesAt(day.number, index + span)[0].course.id === course.id &&
+            entriesAt(day.number, index + span)[0].slot.room === slot.room
+          ) {
+            skipped.add(`${day.number}-${index + span}`);
+            span += 1;
+          }
+          if (span > 1) cell.rowSpan = span;
+          const details = [`${course.className}・${course.teacher}`];
+          cell.classList.add(`fill-${course.id % FILL_COUNT}`);
+          if (fitsVertically(course.name, [...details, slot.room], span)) cell.classList.add('is-vertical');
+          const inner = el('div', 'tile__body');
+          inner.append(el('strong', '', course.name), ...details.map((text) => el('span', '', text)), el('span', '', slot.room));
+          cell.append(inner);
+        } else {
+          cell.classList.add('is-conflict');
+          const inner = el('div', 'tile__body');
+          inner.append(el('em', 'conflict-flag', '衝突'));
+          entries.forEach(({ course }) => inner.append(el('strong', '', course.name)));
+          cell.append(inner);
+        }
         row.append(cell);
       });
       body.append(row);

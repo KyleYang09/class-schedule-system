@@ -1,11 +1,11 @@
-<div class="grid-wrap" role="region" aria-label="{{ label }}" tabindex="0">
+<div class="sheet" role="region" aria-label="{{ label }}" tabindex="0">
   <table class="grid">
     <caption class="sr-only">{{ label }}</caption>
     <thead>
       <tr>
-        <th scope="col" class="grid__corner">節次</th>
+        <th scope="col" class="grid__corner"><span class="sr-only">節次</span></th>
         {% for day in grid.days %}
-          <th scope="col"{% if day.number == today %} class="is-today" aria-current="date"{% endif %}>
+          <th scope="col" class="tile{% if day.number == today %} is-today{% endif %}"{% if day.number == today %} aria-current="date"{% endif %}>
             {{ day.label }}{% if day.number == today %}<small>今天</small>{% endif %}
           </th>
         {% endfor %}
@@ -20,20 +20,20 @@
           </tr>
         {% endif %}
         <tr>
-          <th scope="row" class="grid__period">
+          <th scope="row" class="tile grid__period">
             <b>{{ row.period.code }}</b>
-            <small>{{ row.period.start_time|time:"H:i" }}–{{ row.period.end_time|time:"H:i" }}</small>
+            <small>{{ row.period.start_time|time:"H:i" }}<br>{{ row.period.end_time|time:"H:i" }}</small>
           </th>
           {% for cell in row.cells %}
-            <td>
-              {% if cell %}
-                <div class="lesson tint-{{ cell.tint }}">
+            {% if cell.skip %}{% elif cell.empty %}<td class="tile tile--empty"></td>{% else %}
+              <td class="tile fill-{{ cell.fill }}{% if cell.vertical %} is-vertical{% endif %}"{% if cell.rowspan > 1 %} rowspan="{{ cell.rowspan }}"{% endif %}>
+                <div class="tile__body">
                   <strong>{{ cell.name }}</strong>
-                  <span>{{ cell.detail }}</span>
+                  {% for text in cell.details %}<span>{{ text }}</span>{% endfor %}
                   <span>{{ cell.room }}</span>
                 </div>
-              {% endif %}
-            </td>
+              </td>
+            {% endif %}
           {% endfor %}
         </tr>
       {% endfor %}

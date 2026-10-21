@@ -1,7 +1,7 @@
 {% extends 'admin/base.html' %}
-{% load static %}
+{% load assets %}
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | 課表維護系統{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'schedule/css/admin.css' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% asset 'schedule/css/admin.css' %}">{% endblock %}
 {% block branding %}
 <div id="site-name"><a href="{% url 'admin:index' %}">課表維護系統</a></div>
 {% endblock %}

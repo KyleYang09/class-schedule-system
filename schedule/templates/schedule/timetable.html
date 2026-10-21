@@ -1,5 +1,5 @@
 {% extends 'schedule/base.html' %}
-{% load static %}
+{% load assets %}
 {% block title %}{% if current %}{{ current }}・{% endif %}{% endblock %}
 {% block content %}
 <div class="layout">
@@ -46,4 +46,4 @@
   </section>
 </div>
 {% endblock %}
-{% block scripts %}<script src="{% static 'schedule/js/filter.js' %}"></script>{% endblock %}
+{% block scripts %}<script src="{% asset 'schedule/js/filter.js' %}"></script>{% endblock %}

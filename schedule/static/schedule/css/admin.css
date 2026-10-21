@@ -1,44 +1,41 @@
 :root {
-  --primary: #1f7a78;
-  --secondary: #17615f;
-  --accent: #e9b93b;
-  --primary-fg: #fbf8f0;
-  --body-fg: #2a2822;
-  --body-bg: #fbf8f0;
-  --body-quiet-color: #5f5a4d;
-  --body-loud-color: #2a2822;
-  --header-color: #fbf8f0;
-  --header-branding-color: #e9b93b;
-  --header-bg: #17615f;
-  --header-link-color: #fbf8f0;
-  --breadcrumbs-fg: #d3e7e3;
-  --breadcrumbs-link-fg: #fbf8f0;
-  --breadcrumbs-bg: #1f7a78;
-  --link-fg: #17615f;
-  --link-hover-color: #2a2822;
-  --link-selected-fg: #17615f;
-  --hairline-color: #ddd5c2;
-  --border-color: #ddd5c2;
-  --darkened-bg: #f5efe0;
-  --selected-bg: #e2ebb5;
-  --selected-row: #f7eab4;
-  --button-fg: #fbf8f0;
-  --button-bg: #1f7a78;
-  --button-hover-bg: #17615f;
-  --default-button-bg: #17615f;
-  --default-button-hover-bg: #2a2822;
-  --close-button-bg: #5f5a4d;
-  --close-button-hover-bg: #2a2822;
-  --object-tools-fg: #fbf8f0;
-  --object-tools-bg: #5f5a4d;
-  --object-tools-hover-bg: #2a2822;
-  --message-success-bg: #e2ebb5;
-  --message-warning-bg: #f7eab4;
-  --message-error-bg: #f3d9cf;
-  --error-fg: #8e3320;
+  --primary: #5c5552;
+  --secondary: #433633;
+  --accent: #decbb7;
+  --primary-fg: #f7f0f5;
+  --body-fg: #433633;
+  --body-bg: #fdfafc;
+  --body-quiet-color: #5c5552;
+  --body-loud-color: #433633;
+  --header-color: #f7f0f5;
+  --header-branding-color: #decbb7;
+  --header-bg: #433633;
+  --header-link-color: #f7f0f5;
+  --breadcrumbs-fg: #decbb7;
+  --breadcrumbs-link-fg: #f7f0f5;
+  --breadcrumbs-bg: #5c5552;
+  --link-fg: #433633;
+  --link-hover-color: #5c5552;
+  --link-selected-fg: #433633;
+  --hairline-color: #cdb9a4;
+  --border-color: #b8aea6;
+  --darkened-bg: #f7f0f5;
+  --selected-bg: #decbb7;
+  --selected-row: #e9ddcf;
+  --button-fg: #f7f0f5;
+  --button-bg: #5c5552;
+  --button-hover-bg: #433633;
+  --default-button-bg: #433633;
+  --default-button-hover-bg: #5c5552;
+  --close-button-bg: #8f857d;
+  --close-button-hover-bg: #5c5552;
+  --object-tools-fg: #f7f0f5;
+  --object-tools-bg: #5c5552;
+  --object-tools-hover-bg: #433633;
+  --message-success-bg: #e9ddcf;
+  --message-warning-bg: #decbb7;
+  --message-error-bg: #decbb7;
+  --error-fg: #433633;
 }
-body { font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif; }
-.back-to-site {
-  display: inline-block;
-  margin-right: 16px;
-}
+body { font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", sans-serif; }
+.back-to-site { display: inline-block; margin-right: 16px; }

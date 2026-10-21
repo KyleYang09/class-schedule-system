@@ -6,9 +6,15 @@ from django.utils import timezone
 
 from .models import ClassGroup, Course, Period, Slot, Teacher, Weekday
 
-TINT_COUNT = 4
+FILL_COUNT = 4
+TILE_HEIGHT = 84
+TILE_GAP = 8
+CHAR_HEIGHT = 22
+SMALL_CHAR_HEIGHT = 16
+TILE_PADDING = 28
 WEEKDAY_LABELS = dict(Weekday.choices)
 LUNCH_MARKER = (12, 30)
+BREAK_MINUTES = 60
 
 
 def _minutes_between(earlier, later):
@@ -16,38 +22,71 @@ def _minutes_between(earlier, later):
     return (datetime.combine(day, later) - datetime.combine(day, earlier)) / timedelta(minutes=1)
 
 
+def period_rows():
+    rows = []
+    previous = None
+    for period in Period.objects.all():
+        label = ''
+        if previous and _minutes_between(previous.end_time, period.start_time) >= BREAK_MINUTES:
+            noon = previous.end_time.replace(hour=LUNCH_MARKER[0], minute=LUNCH_MARKER[1])
+            label = '午休' if previous.end_time <= noon <= period.start_time else '休息'
+        rows.append({
+            'period': period,
+            'break_label': label,
+            'break_time': label and f'{previous.end_time:%H:%M}–{period.start_time:%H:%M}',
+        })
+        previous = period
+    return rows
+
+
+def text_length(text, unit):
+    return sum(unit * (0.55 if ord(char) < 128 else 1) for char in text)
+
+
+def fits_vertically(cell):
+    if cell['rowspan'] < 2:
+        return False
+    height = cell['rowspan'] * TILE_HEIGHT + (cell['rowspan'] - 1) * TILE_GAP - TILE_PADDING
+    small = [cell['room'], *cell['details']]
+    return (
+        text_length(cell['name'], CHAR_HEIGHT) <= height
+        and all(len(text) * SMALL_CHAR_HEIGHT <= height for text in small)
+    )
+
+
 def build_grid(slots, detail):
-    periods = list(Period.objects.all())
+    rows = period_rows()
     days = [
         day for day in Weekday.values
         if day <= 5 or any(slot.weekday == day for slot in slots)
     ]
-    cells = {(slot.weekday, slot.period_id): slot for slot in slots}
-    rows = []
-    previous = None
-    for period in periods:
-        break_label = ''
-        if previous and _minutes_between(previous.end_time, period.start_time) >= 60:
-            noon = previous.end_time.replace(hour=LUNCH_MARKER[0], minute=LUNCH_MARKER[1])
-            break_label = '午休' if previous.end_time <= noon <= period.start_time else '休息'
-        row_cells = []
+    by_cell = {(slot.weekday, slot.period_id): slot for slot in slots}
+
+    for index, row in enumerate(rows):
+        row['cells'] = []
         for day in days:
-            slot = cells.get((day, period.id))
-            row_cells.append(
-                slot and {
+            slot = by_cell.get((day, row['period'].id))
+            above = rows[index - 1]['cells'][len(row['cells'])] if index else None
+            if slot and above is not None and not row['break_label']:
+                owner = above.get('merged_into') or above
+                if owner.get('course_id') == slot.course_id and owner.get('room') == slot.room.name:
+                    owner['rowspan'] += 1
+                    row['cells'].append({'skip': True, 'merged_into': owner, 'course_id': slot.course_id})
+                    continue
+            row['cells'].append(
+                {
+                    'course_id': slot.course_id,
                     'name': slot.course.name,
-                    'detail': detail(slot),
+                    'details': [detail(slot)],
                     'room': slot.room.name,
-                    'tint': slot.course_id % TINT_COUNT,
-                }
+                    'fill': slot.course_id % FILL_COUNT,
+                    'rowspan': 1,
+                } if slot else {'empty': True}
             )
-        rows.append({
-            'period': period,
-            'break_label': break_label,
-            'break_time': break_label and f'{previous.end_time:%H:%M}–{period.start_time:%H:%M}',
-            'cells': row_cells,
-        })
-        previous = period
+    for row in rows:
+        for cell in row['cells']:
+            if 'name' in cell:
+                cell['vertical'] = fits_vertically(cell)
     return {
         'days': [{'number': day, 'label': WEEKDAY_LABELS[day]} for day in days],
         'rows': rows,
@@ -105,8 +144,15 @@ def my_timetable(request):
     )
     data = {
         'periods': [
-            {'id': p.id, 'code': p.code, 'start': f'{p.start_time:%H:%M}', 'end': f'{p.end_time:%H:%M}'}
-            for p in Period.objects.all()
+            {
+                'id': row['period'].id,
+                'code': row['period'].code,
+                'start': f"{row['period'].start_time:%H:%M}",
+                'end': f"{row['period'].end_time:%H:%M}",
+                'breakLabel': row['break_label'],
+                'breakTime': row['break_time'],
+            }
+            for row in period_rows()
         ],
         'classes': [{'id': c.id, 'name': c.name} for c in ClassGroup.objects.all()],
         'weekdays': [{'number': n, 'label': label} for n, label in Weekday.choices],
@@ -126,5 +172,3 @@ def my_timetable(request):
         ],
     }
     return render(request, 'schedule/my_timetable.html', {'data': data, 'nav': 'my'})
-
-    

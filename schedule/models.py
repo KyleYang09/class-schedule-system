@@ -110,10 +110,10 @@ class Slot(models.Model):
         Room, on_delete=models.PROTECT, related_name='slots', verbose_name='教室'
     )
     class_group = models.ForeignKey(
-        ClassGroup, on_delete=models.PROTECT, related_name='slots', editable=False
+        ClassGroup, on_delete=models.PROTECT, related_name='slots', editable=False, verbose_name='班級'
     )
     teacher = models.ForeignKey(
-        Teacher, on_delete=models.PROTECT, related_name='slots', editable=False
+        Teacher, on_delete=models.PROTECT, related_name='slots', editable=False, verbose_name='教師'
     )
 
     class Meta:

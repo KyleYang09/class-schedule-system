@@ -1,5 +1,5 @@
 {% extends 'schedule/base.html' %}
-{% load static %}
+{% load assets %}
 {% block title %}我的課表・{% endblock %}
 {% block content %}
 <div class="layout" id="my-app">
@@ -32,4 +32,4 @@
 </div>
 {{ data|json_script:"timetable-data" }}
 {% endblock %}
-{% block scripts %}<script src="{% static 'schedule/js/my_timetable.js' %}"></script>{% endblock %}
+{% block scripts %}<script src="{% asset 'schedule/js/my_timetable.js' %}"></script>{% endblock %}
