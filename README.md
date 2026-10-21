@@ -46,3 +46,5 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - 每次開啟新的終端機，都需要重新啟用虛擬環境，不需要重新建立 `.venv`。
 - 若出現 `running scripts is disabled on this system` 或 `PSSecurityException`，代表 PowerShell 的執行政策阻擋了啟動腳本，可參考上述處理方式。
 - 執行指令前，請確認目前位於包含 `manage.py` 的專案資料夾。
+
+py party
