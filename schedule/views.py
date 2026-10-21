@@ -126,3 +126,5 @@ def my_timetable(request):
         ],
     }
     return render(request, 'schedule/my_timetable.html', {'data': data, 'nav': 'my'})
+
+    
