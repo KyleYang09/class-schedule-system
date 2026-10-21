@@ -21,3 +21,5 @@ python manage.py runserver
 
 若無法啟用虛擬環境,先執行一次:
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+py party
