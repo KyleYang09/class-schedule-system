@@ -48,3 +48,4 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - 執行指令前，請確認目前位於包含 `manage.py` 的專案資料夾。
 
 py party
+party py
