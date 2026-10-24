@@ -1,42 +1,45 @@
-<div class="sheet" role="region" aria-label="{{ label }}" tabindex="0">
-  <table class="grid">
-    <caption class="sr-only">{{ label }}</caption>
-    <thead>
-      <tr>
-        <th scope="col" class="grid__corner"><span class="sr-only">節次</span></th>
-        {% for day in grid.days %}
-          <th scope="col" class="tile{% if day.number == today %} is-today{% endif %}"{% if day.number == today %} aria-current="date"{% endif %}>
-            {{ day.label }}{% if day.number == today %}<small>今天</small>{% endif %}
-          </th>
-        {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in grid.rows %}
-        {% if row.break_label %}
-          <tr class="grid__break">
-            <th scope="row">{{ row.break_label }}</th>
-            <td colspan="{{ grid.days|length }}">{{ row.break_time }}</td>
-          </tr>
-        {% endif %}
+<div class="board">
+  <div class="sheet" role="region" aria-label="{{ label }}" tabindex="0">
+    <table class="grid">
+      <caption class="sr-only">{{ label }}</caption>
+      <thead>
         <tr>
-          <th scope="row" class="tile grid__period">
-            <b>{{ row.period.code }}</b>
-            <small>{{ row.period.start_time|time:"H:i" }}<br>{{ row.period.end_time|time:"H:i" }}</small>
-          </th>
-          {% for cell in row.cells %}
-            {% if cell.skip %}{% elif cell.empty %}<td class="tile tile--empty"></td>{% else %}
-              <td class="tile fill-{{ cell.fill }}{% if cell.vertical %} is-vertical{% endif %}"{% if cell.rowspan > 1 %} rowspan="{{ cell.rowspan }}"{% endif %}>
-                <div class="tile__body">
-                  <strong>{{ cell.name }}</strong>
-                  {% for text in cell.details %}<span>{{ text }}</span>{% endfor %}
-                  <span>{{ cell.room }}</span>
-                </div>
-              </td>
-            {% endif %}
+          <th scope="col" class="grid__corner"><span class="sr-only">節次</span></th>
+          {% for day in grid.days %}
+            <th scope="col" class="tile{% if day.weekend %} is-weekend{% endif %}{% if day.number == today %} is-today{% endif %}"{% if day.number == today %} aria-current="date"{% endif %}>
+              {{ day.label }}{% if day.number == today %}<small>今天</small>{% endif %}
+            </th>
           {% endfor %}
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {% for row in grid.rows %}
+          {% if row.break_label %}
+            <tr class="grid__break">
+              <th scope="row">{{ row.break_label }}</th>
+              <td colspan="{{ grid.days|length }}"><span>{{ row.break_time }}</span></td>
+            </tr>
+          {% endif %}
+          <tr>
+            <th scope="row" class="tile grid__period{% if row.is_now %} is-now{% endif %}">
+              <b>{{ row.period.code }}</b>
+              <small>{{ row.period.start_time|time:"H:i" }}<br>{{ row.period.end_time|time:"H:i" }}</small>
+              {% if row.is_now %}<em>現在</em>{% endif %}
+            </th>
+            {% for cell in row.cells %}
+              {% if cell.skip %}{% elif cell.empty %}<td class="tile tile--empty{% if cell.weekend %} tile--weekend{% endif %}{% if cell.today %} tile--today{% endif %}"></td>{% else %}
+                <td class="tile fill-{{ cell.fill }}{% if cell.vertical %} is-vertical{% endif %}"{% if cell.rowspan > 1 %} rowspan="{{ cell.rowspan }}"{% endif %}>
+                  <div class="tile__body">
+                    <strong>{{ cell.name }}</strong>
+                    {% for text in cell.details %}<span>{{ text }}</span>{% endfor %}
+                    <span>{{ cell.room }}</span>
+                  </div>
+                </td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>

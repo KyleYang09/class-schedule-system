@@ -24,10 +24,16 @@
   <section class="content">
     {% if current %}
       <header class="content__head">
-        <h1>{{ current.name }}<span>{% if kind == 'class' %}課表{% else %}授課表{% endif %}</span></h1>
-        {% if lesson_count %}
-          <p class="meta">共 {{ course_count }} 門課、每週 {{ lesson_count }} 節{% if grid.has_weekend %}，含週末加開{% endif %}</p>
-        {% endif %}
+        <div>
+          <h1>{{ current.name }}<span>{% if kind == 'class' %}課表{% else %}授課表{% endif %}</span></h1>
+          {% if lesson_count %}
+            <p class="meta">共 {{ course_count }} 門課、每週 {{ lesson_count }} 節{% if grid.has_weekend %}，含週末加開{% endif %}</p>
+          {% endif %}
+        </div>
+        <time class="stamp" datetime="{{ today_date|date:'Y-m-d' }}">
+          <b>{{ today_date|date:'m.d' }}</b>
+          <span>{{ today_date|date:'l' }}</span>
+        </time>
       </header>
       {% if lesson_count %}
         {% include 'schedule/_grid.html' with label=current.name %}

@@ -7,7 +7,7 @@ from django.utils import timezone
 from .models import ClassGroup, Course, Period, Slot, Teacher, Weekday
 
 FILL_COUNT = 4
-TILE_HEIGHT = 84
+TILE_HEIGHT = 100
 TILE_GAP = 8
 CHAR_HEIGHT = 22
 SMALL_CHAR_HEIGHT = 16
@@ -22,7 +22,7 @@ def _minutes_between(earlier, later):
     return (datetime.combine(day, later) - datetime.combine(day, earlier)) / timedelta(minutes=1)
 
 
-def period_rows():
+def period_rows(now=None):
     rows = []
     previous = None
     for period in Period.objects.all():
@@ -32,6 +32,7 @@ def period_rows():
             label = '午休' if previous.end_time <= noon <= period.start_time else '休息'
         rows.append({
             'period': period,
+            'is_now': bool(now and period.start_time <= now <= period.end_time),
             'break_label': label,
             'break_time': label and f'{previous.end_time:%H:%M}–{period.start_time:%H:%M}',
         })
@@ -54,12 +55,9 @@ def fits_vertically(cell):
     )
 
 
-def build_grid(slots, detail):
-    rows = period_rows()
-    days = [
-        day for day in Weekday.values
-        if day <= 5 or any(slot.weekday == day for slot in slots)
-    ]
+def build_grid(slots, detail, today, now):
+    rows = period_rows(now)
+    days = list(Weekday.values)
     by_cell = {(slot.weekday, slot.period_id): slot for slot in slots}
 
     for index, row in enumerate(rows):
@@ -81,20 +79,21 @@ def build_grid(slots, detail):
                     'room': slot.room.name,
                     'fill': slot.course_id % FILL_COUNT,
                     'rowspan': 1,
-                } if slot else {'empty': True}
+                } if slot else {'empty': True, 'weekend': day > 5, 'today': day == today}
             )
     for row in rows:
         for cell in row['cells']:
             if 'name' in cell:
                 cell['vertical'] = fits_vertically(cell)
     return {
-        'days': [{'number': day, 'label': WEEKDAY_LABELS[day]} for day in days],
+        'days': [{'number': day, 'label': WEEKDAY_LABELS[day], 'weekend': day > 5} for day in days],
         'rows': rows,
-        'has_weekend': any(day > 5 for day in days),
+        'has_weekend': any(slot.weekday > 5 for slot in slots),
     }
 
 
 def _timetable_page(request, pk, queryset, field, detail, kind):
+    local_now = timezone.localtime()
     items = list(queryset)
     if pk:
         current = next((item for item in items if item.pk == pk), None)
@@ -107,14 +106,15 @@ def _timetable_page(request, pk, queryset, field, detail, kind):
         'nav': kind,
         'items': items,
         'current': current,
-        'today': timezone.localtime().isoweekday(),
+        'today': local_now.isoweekday(),
+        'today_date': local_now.date(),
     }
     if current:
         slots = list(
             Slot.objects.filter(**{field: current})
             .select_related('course', 'teacher', 'class_group', 'room', 'period')
         )
-        context['grid'] = build_grid(slots, detail)
+        context['grid'] = build_grid(slots, detail, local_now.isoweekday(), local_now.time())
         context['lesson_count'] = len(slots)
         context['course_count'] = len({slot.course_id for slot in slots})
     return render(request, 'schedule/timetable.html', context)

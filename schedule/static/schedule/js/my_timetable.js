@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = 'schedule.my.courses';
   const FILL_COUNT = 4;
-  const TILE_HEIGHT = 84;
+  const TILE_HEIGHT = 100;
   const TILE_GAP = 8;
   const TILE_PADDING = 28;
   const CHAR_HEIGHT = 22;
@@ -114,7 +114,11 @@
   }
 
   function renderGrid(cells) {
-    const days = data.weekdays.filter((day) => day.number <= 5 || Array.from(cells.keys()).some((key) => key.startsWith(`${day.number}-`)));
+    const days = data.weekdays;
+    const now = new Date();
+    const today = now.getDay() === 0 ? 7 : now.getDay();
+    const clock = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const board = el('div', 'board');
     const wrap = el('div', 'sheet');
     wrap.setAttribute('role', 'region');
     wrap.setAttribute('aria-label', '我的課表');
@@ -122,8 +126,17 @@
     const table = el('table', 'grid');
     const thead = el('thead');
     const head = el('tr');
-    head.append(Object.assign(el('th', 'grid__corner'), { scope: 'col' }));
-    days.forEach((day) => head.append(Object.assign(el('th', 'tile', day.label), { scope: 'col' })));
+    const corner = Object.assign(el('th', 'grid__corner'), { scope: 'col' });
+    corner.append(el('span', 'sr-only', '節次'));
+    head.append(corner);
+    days.forEach((day) => {
+      const classes = ['tile'];
+      if (day.number > 5) classes.push('is-weekend');
+      if (day.number === today) classes.push('is-today');
+      const th = Object.assign(el('th', classes.join(' '), day.label), { scope: 'col' });
+      if (day.number === today) th.append(el('small', '', '今天'));
+      head.append(th);
+    });
     thead.append(head);
     table.append(thead);
 
@@ -135,16 +148,19 @@
       if (period.breakLabel) {
         const gap = el('tr', 'grid__break');
         gap.append(Object.assign(el('th', '', period.breakLabel), { scope: 'row' }));
-        const note = el('td', '', period.breakTime);
+        const note = el('td');
+        note.append(el('span', '', period.breakTime));
         note.colSpan = days.length;
         gap.append(note);
         body.append(gap);
       }
       const row = el('tr');
-      const header = Object.assign(el('th', 'tile grid__period'), { scope: 'row' });
+      const isNow = period.start <= clock && clock <= period.end;
+      const header = Object.assign(el('th', `tile grid__period${isNow ? ' is-now' : ''}`), { scope: 'row' });
       const time = el('small');
       time.append(period.start, document.createElement('br'), period.end);
       header.append(el('b', '', period.code), time);
+      if (isNow) header.append(el('em', '', '現在'));
       row.append(header);
 
       days.forEach((day) => {
@@ -153,6 +169,8 @@
         const cell = el('td', 'tile');
         if (entries.length === 0) {
           cell.classList.add('tile--empty');
+          if (day.number > 5) cell.classList.add('tile--weekend');
+          if (day.number === today) cell.classList.add('tile--today');
         } else if (entries.length === 1) {
           const { course, slot } = entries[0];
           let span = 1;
@@ -185,7 +203,8 @@
     });
     table.append(body);
     wrap.append(table);
-    gridHost.replaceChildren(wrap);
+    board.append(wrap);
+    gridHost.replaceChildren(board);
   }
 
   function renderSelected() {
