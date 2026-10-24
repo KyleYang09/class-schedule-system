@@ -2,34 +2,72 @@
 {% load assets %}
 {% block title %}我的課表・{% endblock %}
 {% block content %}
-<div class="layout" id="my-app">
-  <aside class="picker" aria-label="加入課程">
-    <h2 class="picker__title">加入課程</h2>
-    <label class="picker__label" for="my-class">先選擇班級</label>
-    <select id="my-class" class="field"></select>
-    <ul id="my-courses" class="course-list"></ul>
-  </aside>
-
-  <section class="content">
-    <header class="content__head">
+<section class="content" id="my-app">
+  <header class="content__head">
+    <div>
       <h1>我的課表</h1>
       <p class="meta" id="my-summary" aria-live="polite"></p>
+    </div>
+    <time class="stamp" datetime="{{ today_date|date:'Y-m-d' }}">
+      <b>{{ today_date|date:'m.d' }}</b>
+      <span>{{ today_date|date:'l' }}</span>
+    </time>
+  </header>
+  <div id="my-conflicts" class="notice" role="alert" hidden></div>
+  <div id="my-empty" class="empty" hidden>
+    <h2>還沒有加入任何課程</h2>
+    <p>點右下角的「編輯課表」,挑選想修的課,先預覽再儲存。課表只存在這個瀏覽器,不需要登入。</p>
+  </div>
+  <div id="my-grid"></div>
+</section>
+
+<button type="button" class="fab" id="editor-open">編輯課表</button>
+
+<dialog id="editor" class="editor" aria-labelledby="editor-title">
+  <div class="editor__frame">
+    <header class="editor__head">
+      <h2 id="editor-title">編輯課表</h2>
+      <p>加入或移除課程,右邊會即時預覽。按「儲存變更」才會套用。</p>
     </header>
-    <div id="my-conflicts" class="notice notice--warn" role="alert" hidden></div>
-    <div id="my-empty" class="empty" hidden>
-      <h2>還沒有加入任何課程</h2>
-      <p>從左邊選一個班級,勾選想修的課,就會出現在這裡。課表只存在這個瀏覽器,不需要登入。</p>
+    <div class="tabs" role="tablist" aria-label="編輯項目">
+      <button type="button" role="tab" id="tab-pick" aria-controls="panel-pick" aria-selected="true">加入課程</button>
+      <button type="button" role="tab" id="tab-selected" aria-controls="panel-selected" aria-selected="false" tabindex="-1">已選課程 <span id="draft-count"></span></button>
+      <button type="button" role="tab" id="tab-preview" class="tabs__preview" aria-controls="panel-preview" aria-selected="false" tabindex="-1">預覽</button>
     </div>
-    <div id="my-grid"></div>
-    <div id="my-selected" class="selected" hidden>
-      <div class="selected__head">
-        <h2>已加入的課程</h2>
-        <button type="button" class="btn btn--quiet" id="my-clear">全部移除</button>
+    <div class="editor__body">
+      <div class="editor__left">
+        <section id="panel-pick" role="tabpanel" aria-labelledby="tab-pick" class="editor__panel">
+          <label class="picker__label" for="my-class">班級</label>
+          <select id="my-class" class="field"></select>
+          <ul id="my-courses" class="course-list"></ul>
+        </section>
+        <section id="panel-selected" role="tabpanel" aria-labelledby="tab-selected" class="editor__panel" hidden>
+          <div class="selected__head">
+            <h3>已選課程</h3>
+            <button type="button" class="btn btn--quiet" id="draft-clear">全部移除</button>
+          </div>
+          <p class="picker__empty" id="draft-empty" hidden>還沒有選任何課程。</p>
+          <ul id="draft-list" class="draft-list"></ul>
+        </section>
       </div>
-      <ul id="my-selected-list"></ul>
+      <section id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" class="editor__panel editor__preview" hidden>
+        <div id="draft-conflicts" class="notice" role="status" hidden></div>
+        <div id="preview-empty" class="empty" hidden>
+          <h2>預覽</h2>
+          <p>加入課程後,課表會顯示在這裡。</p>
+        </div>
+        <div id="preview-grid"></div>
+      </section>
     </div>
-  </section>
-</div>
+    <footer class="editor__foot">
+      <p id="draft-diff" aria-live="polite"></p>
+      <div class="editor__actions">
+        <button type="button" class="btn btn--quiet" id="editor-cancel">取消</button>
+        <button type="button" class="btn" id="editor-save">儲存變更</button>
+      </div>
+    </footer>
+  </div>
+</dialog>
 {{ data|json_script:"timetable-data" }}
 {% endblock %}
 {% block scripts %}<script src="{% asset 'schedule/js/my_timetable.js' %}"></script>{% endblock %}

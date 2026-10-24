@@ -171,4 +171,7 @@ def my_timetable(request):
             for course in courses
         ],
     }
-    return render(request, 'schedule/my_timetable.html', {'data': data, 'nav': 'my'})
+    return render(
+        request, 'schedule/my_timetable.html',
+        {'data': data, 'nav': 'my', 'today_date': timezone.localtime().date()},
+    )
