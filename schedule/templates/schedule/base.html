@@ -10,11 +10,11 @@
   <a class="skip-link" href="#main">跳到主要內容</a>
   <header class="site-header">
     <div class="site-header__inner">
-      <a class="brand" href="{% url 'home' %}">課表維護系統</a>
+      <a class="brand" href="{% url 'my_timetable' %}">課表維護系統</a>
       <nav class="nav" aria-label="主選單">
+        <a href="{% url 'my_timetable' %}"{% if nav == 'my' %} aria-current="page"{% endif %}>我的課表</a>
         <a href="{% url 'class_index' %}"{% if nav == 'class' %} aria-current="page"{% endif %}>班級課表</a>
         <a href="{% url 'teacher_index' %}"{% if nav == 'teacher' %} aria-current="page"{% endif %}>教師課表</a>
-        <a href="{% url 'my_timetable' %}"{% if nav == 'my' %} aria-current="page"{% endif %}>我的課表</a>
       </nav>
       <a class="admin-link" href="{% url 'admin:index' %}">資料管理</a>
     </div>
