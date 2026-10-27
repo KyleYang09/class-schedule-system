@@ -130,6 +130,7 @@ python manage.py runserver
 | 修改 Model 後產生 migration | `python manage.py makemigrations schedule` |
 | 套用 migration | `python manage.py migrate` |
 | 檢查專案設定 | `python manage.py check` |
+| 執行自動化測試 | `python manage.py test` |
 
 ### 從頭重建資料庫
 
@@ -142,6 +143,94 @@ python manage.py seed_demo_data
 ```
 
 這只會刪除本機的 `db.sqlite3`,不影響程式碼與 GitHub。
+
+## 協作流程(分支與 Pull Request)
+
+不要直接在 `main` 上改。每個功能或修正各開一個分支,完成後用 Pull Request 合併,讓 `main` 隨時都能正常執行。
+
+### 1. 開始前先同步
+
+```powershell
+git switch main
+git pull origin main
+```
+
+### 2. 建立自己的分支
+
+分支名稱用 `類型/姓名-簡短說明`:
+
+```powershell
+git switch -c feature/hisn-add-tests
+```
+
+| 類型 | 用途 | 範例 |
+|---|---|---|
+| `feature/` | 新功能 | `feature/jia-chen-dark-mode` |
+| `fix/` | 修正錯誤 | `fix/admin-select-option-text` |
+| `docs/` | 文件 | `docs/readme-workflow` |
+
+### 3. 修改、測試、提交
+
+提交前先確認專案能正常執行、測試全部通過:
+
+```powershell
+python manage.py check
+python manage.py test
+```
+
+只加入這次有改的檔案,不要用 `git add .` 把不相關的檔案一起帶進去:
+
+```powershell
+git status
+git add schedule/tests.py README.md
+git commit -m "新增自動化測試"
+```
+
+提交訊息用中文,第一行說明「做了什麼」,不要只寫「更新」或「修改」。一個提交只做一件事。
+
+如果改了 Model,記得一併提交 migration:
+
+```powershell
+python manage.py makemigrations schedule
+git add schedule/migrations
+```
+
+### 4. 推送並開 Pull Request
+
+```powershell
+git push -u origin feature/hisn-add-tests
+```
+
+到 GitHub 倉庫頁面,按「Compare & pull request」,填寫:
+
+- **標題**:沿用提交訊息的第一行。
+- **說明**:做了什麼、為什麼、怎麼確認過(例如「`python manage.py test` 全數通過」)。畫面有變動請附截圖。
+- **審查者**:指定至少一位組員。
+
+如果程式碼有用 AI 協助產生,在說明裡註明,並確認自己看得懂、跑過、測過。
+
+### 5. 審查與合併
+
+- 審查者看過沒問題才按「Merge」,有意見就在 PR 留言,作者修改後再推送到同一個分支,PR 會自動更新。
+- 不要合併自己的 PR。
+- 合併後回到本機清理:
+
+```powershell
+git switch main
+git pull origin main
+git branch -d feature/hisn-add-tests
+```
+
+### 發生衝突時
+
+`git pull` 或合併時出現 `CONFLICT`,代表兩個人改了同一段。用 VS Code 開啟衝突檔案,選擇保留哪一邊(或手動合併),存檔後:
+
+```powershell
+git add 衝突的檔案
+git commit
+```
+
+不確定怎麼處理時,先不要硬推,找組員一起看。
 
 ## 常見問題
 
@@ -175,6 +264,7 @@ class-schedule-system/
 │   ├── templates/               頁面樣板
 │   ├── templatetags/            樣式檔自動更新版本號
 │   ├── models.py                資料模型與時段衝突約束
+│   ├── tests.py                 自動化測試
 │   ├── views.py                 查詢與課表組裝
 │   ├── urls.py                  網址路由
 │   └── admin.py                 後台設定
