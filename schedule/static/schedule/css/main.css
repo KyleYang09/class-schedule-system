@@ -1,4 +1,6 @@
 :root {
+  --page: #fffdfb;
+  --dot: rgba(143, 133, 125, 0.42);
   --paper: #f7f0f5;
   --sand: #decbb7;
   --stone: #8f857d;
@@ -25,8 +27,8 @@
 
 body {
   margin: 0;
-  background-color: var(--sand);
-  background-image: radial-gradient(rgba(143, 133, 125, 0.32) 1px, transparent 1.3px);
+  background-color: var(--page);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.3px);
   background-size: 18px 18px;
   color: var(--ink);
   font: 16px/1.6 var(--font);
@@ -81,7 +83,8 @@ a { color: var(--ink); }
   letter-spacing: 0.12em;
   text-decoration: none;
 }
-.nav { display: flex; gap: var(--space-5); flex: 1; }
+.nav { display: flex; flex-wrap: wrap; column-gap: var(--space-5); flex: 1; }
+.nav a { white-space: nowrap; }
 .nav a,
 .admin-link {
   display: inline-flex;
@@ -556,8 +559,8 @@ body:has(dialog[open]) .fab { visibility: hidden; }
   padding: 0;
   border: 2px solid var(--ink);
   border-radius: 4px;
-  background-color: var(--sand);
-  background-image: radial-gradient(rgba(143, 133, 125, 0.32) 1px, transparent 1.3px);
+  background-color: var(--page);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.3px);
   background-size: 18px 18px;
   color: var(--ink);
   box-shadow: 8px 8px 0 var(--shade);

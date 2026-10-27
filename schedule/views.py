@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.utils import timezone
 
 from .models import ClassGroup, Course, Period, Slot, Teacher, Weekday
@@ -118,10 +118,6 @@ def _timetable_page(request, pk, queryset, field, detail, kind):
         context['lesson_count'] = len(slots)
         context['course_count'] = len({slot.course_id for slot in slots})
     return render(request, 'schedule/timetable.html', context)
-
-
-def home(request):
-    return redirect('class_index')
 
 
 def class_timetable(request, pk=None):
