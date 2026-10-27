@@ -174,3 +174,6 @@ def my_timetable(request):
 
 def py_han(request):
     return render(request, "schedule/py_han.html", {"nav": "han"})
+
+def py_hsin(request):
+    return render(request, "schedule/py_hsin.html", {"nav": "hsin"})

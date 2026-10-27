@@ -25,6 +25,7 @@
         <a href="{% url 'class_index' %}"{% if nav == 'class' %} aria-current="page"{% endif %}>班級課表</a>
         <a href="{% url 'teacher_index' %}"{% if nav == 'teacher' %} aria-current="page"{% endif %}>教師課表</a>
         <a href="{% url 'py_han' %}"{% if nav == 'han' %} aria-current="page"{% endif %}>han的課表</a>
+        <a href="{% url 'py_hsin' %}"{% if nav == 'hsin' %} aria-current="page"{% endif %}>hsin的課表</a>
       </nav>
       <div class="header-tools">
         <a class="admin-link" href="{% url 'admin:index' %}">資料管理</a>
