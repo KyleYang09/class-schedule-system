@@ -175,3 +175,6 @@ def my_timetable(request):
         request, 'schedule/my_timetable.html',
         {'data': data, 'nav': 'my', 'today_date': timezone.localtime().date()},
     )
+
+def py_han(request):
+    return render(request, "schedule/py_han.html", {"nav": "han"})

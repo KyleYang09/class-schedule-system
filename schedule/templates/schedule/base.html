@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% endblock %}課表維護系統</title>
   <link rel="stylesheet" href="{% asset 'schedule/css/main.css' %}">
+  {% block head %}{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要內容</a>
@@ -15,6 +16,7 @@
         <a href="{% url 'my_timetable' %}"{% if nav == 'my' %} aria-current="page"{% endif %}>我的課表</a>
         <a href="{% url 'class_index' %}"{% if nav == 'class' %} aria-current="page"{% endif %}>班級課表</a>
         <a href="{% url 'teacher_index' %}"{% if nav == 'teacher' %} aria-current="page"{% endif %}>教師課表</a>
+        <a href="{% url 'py_han' %}"{% if nav == 'han' %} aria-current="page"{% endif %}>han的課表</a>
       </nav>
       <a class="admin-link" href="{% url 'admin:index' %}">資料管理</a>
     </div>

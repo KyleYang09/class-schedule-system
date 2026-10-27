@@ -1,0 +1,16 @@
+{% extends "schedule/base.html" %}
+{% load assets %}
+
+{% block title %}han的課表 · {% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% asset 'schedule/css/py_han.css' %}">
+{% endblock %}
+
+{% block content %}
+  <h1>han的課表</h1>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% asset 'schedule/js/py_han.js' %}"></script>
+{% endblock %}
