@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% endblock %}課表維護系統</title>
   <link rel="icon" href="{% asset 'schedule/img/icon-icons.ico' %}" sizes="any">
+  <script>
+    try {
+      var saved = localStorage.getItem('schedule.theme');
+      var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="{% asset 'schedule/css/main.css' %}">
   {% block head %}{% endblock %}
 </head>
@@ -19,12 +26,22 @@
         <a href="{% url 'teacher_index' %}"{% if nav == 'teacher' %} aria-current="page"{% endif %}>教師課表</a>
         <a href="{% url 'py_han' %}"{% if nav == 'han' %} aria-current="page"{% endif %}>han的課表</a>
       </nav>
-      <a class="admin-link" href="{% url 'admin:index' %}">資料管理</a>
+      <div class="header-tools">
+        <a class="admin-link" href="{% url 'admin:index' %}">資料管理</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">
+          <span class="sr-only">深色模式</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
   <main id="main" class="page">
     {% block content %}{% endblock %}
   </main>
+  <script src="{% asset 'schedule/js/theme.js' %}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
