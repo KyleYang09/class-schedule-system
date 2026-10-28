@@ -177,3 +177,9 @@ def py_han(request):
 
 def py_hsin(request):
     return render(request, "schedule/py_hsin.html", {"nav": "hsin"})
+
+def py_hy(request):
+    return render(request, "schedule/py_hy.html", {"nav": "hy"})
+
+def py_jai_chen(request):
+    return render(request, "schedule/py_jai_chen.html", {"nav": "jai_chen"})

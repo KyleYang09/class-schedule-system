@@ -11,5 +11,7 @@ urlpatterns = [
     path('teachers/', views.teacher_timetable, name='teacher_index'),
     path('teachers/<int:pk>/', views.teacher_timetable, name='teacher_timetable'),
     path("han/", views.py_han, name="py_han"),
-    path("hsin/", views.py_hsin, name="py_hsin")
+    path("hsin/", views.py_hsin, name="py_hsin"),
+    path("hy/", views.py_hy, name="py_hy"),
+    path("jai_chen/", views.py_jai_chen, name="jai_chen"),
 ]
