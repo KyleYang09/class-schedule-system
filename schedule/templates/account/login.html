@@ -1,0 +1,59 @@
+{% extends "account/auth_base.html" %}
+{% load socialaccount %}
+
+{% block auth_title %}登入{% endblock %}
+{% block heading %}登入{% endblock %}
+{% block lead %}登入後可查看與管理你的課表{% endblock %}
+
+{% block auth_body %}
+  <form class="auth-form" method="post" action="{% url 'account_login' %}" data-pending="登入中…" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="auth-form__alert" role="alert">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    {% for field in form.visible_fields %}
+      {% if field.widget_type == 'checkbox' %}
+        <div class="auth-form__check">
+          {{ field }}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        </div>
+      {% else %}
+        <div class="auth-form__row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p class="auth-form__error" id="{{ field.auto_id }}_error">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+    {% endif %}
+
+    <button type="submit" class="btn auth-form__submit">登入</button>
+    <p class="auth-form__aside"><a href="{% url 'account_reset_password' %}">忘記密碼？</a></p>
+  </form>
+
+  {% get_providers as providers %}
+  {% if providers %}
+    <p class="auth-divider"><span>或</span></p>
+    {% for provider in providers %}
+      <form method="post" action="{% provider_login_url provider process='login' %}" data-pending="前往 {% if provider.id == 'line' %}LINE{% else %}{{ provider.name }}{% endif %}…">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+        <button type="submit" class="btn btn--quiet auth-form__submit">使用 {% if provider.id == 'line' %}LINE{% else %}{{ provider.name }}{% endif %} 登入</button>
+      </form>
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
+{% block auth_foot %}
+  <p class="auth__foot">還沒有帳號？<a href="{% url 'account_signup' %}">註冊</a></p>
+{% endblock %}

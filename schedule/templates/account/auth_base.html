@@ -1,0 +1,37 @@
+{% extends "schedule/base.html" %}
+{% load assets %}
+
+{% block title %}{% block auth_title %}{% endblock %} · {% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% asset 'schedule/css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="auth">
+    <header class="content__head auth__head">
+      <div>
+        <h1>{% block heading %}{% endblock %}</h1>
+        <p class="meta">{% block lead %}{% endblock %}</p>
+      </div>
+    </header>
+
+    {% if messages %}
+      <ul class="auth__messages">
+        {% for message in messages %}
+          <li class="notice" role="status">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <div class="board auth__board">
+      {% block auth_body %}{% endblock %}
+    </div>
+
+    {% block auth_foot %}{% endblock %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% asset 'schedule/js/auth.js' %}"></script>
+{% endblock %}
