@@ -1,6 +1,6 @@
 # 課表維護系統
 
-Django 專案：班級與教師課表查詢、我的課表、使用者登入（Email 註冊與 LINE 登入）。
+Django 專案：班級與教師課表查詢、我的課表、Email 與 LINE 登入。支援桌面週課表、手機每日課程清單、深色模式、個人加退選、必修鎖定與時段衝突檢查；登入與註冊頁也提供欄位錯誤及送出狀態回饋。
 
 ## 先搞清楚：什麼會跟著 Git 走，什麼不會
 
@@ -12,6 +12,8 @@ Django 專案：班級與教師課表查詢、我的課表、使用者登入（E
 | | 寄信與 LINE 的金鑰（環境變數，見下方） |
 
 金鑰與密碼**絕對不要**寫進程式碼或提交到 Git。每個人請各自申請自己的 Gmail 應用程式密碼，不要共用。
+
+本 README 的指令用於本機開發。專案目前預設 `DEBUG=1`，內建的 `SECRET_KEY` 也只是開發用；不要直接以這些預設值公開部署。
 
 ## 換電腦（或新隊友）檢查清單
 
@@ -67,7 +69,7 @@ python manage.py createsuperuser
 ```
 
 - `db.sqlite3` 不會被提交到 Git，每台電腦的資料庫都是獨立的，所以另一台電腦註冊過的帳號，在這台**不存在**。
-- `seed_demo_data` 會建立示範資料與開發用管理員帳號（只在 `DEBUG` 開啟時建立）。如果找不到這個指令，請向專案負責人確認名稱。
+- `seed_demo_data` 會建立示範資料；若尚未有 `admin` 使用者，也會建立本機開發用管理員 `admin`（密碼 `demo1234`）。指令只在 `DEBUG` 開啟時執行，這組帳密只能用於本機開發，不可用於公開部署。
 - `createsuperuser` 會問使用者名稱、**電子郵件**、密碼。登入頁用的是電子郵件，所以信箱不要留空。
 
 建立完管理員後，把這台電腦上所有有信箱的帳號標記為「已驗證」，這樣就能直接用電子郵件登入（只在開發階段使用）：
@@ -93,7 +95,7 @@ python manage.py runserver
 
 Django 預設只把信印在終端機。設定了 `EMAIL_HOST` 之後，才會用 SMTP 真的寄出。
 
-先到 Google 帳戶開啟「兩步驟驗證」，再到「應用程式密碼」建立一組 16 碼密碼（不是你平常登入 Google 的密碼）。依 [Gmail SMTP 限制說明](https://serversmtp.com/limits-of-gmail-smtp-server/)，一般 Gmail 帳號每天上限為 500 位收件人。
+先到 Google 帳戶開啟「兩步驟驗證」，再依 [Google 官方說明](https://support.google.com/accounts/answer/185833?hl=zh-Hant)建立一組 16 碼應用程式密碼（不是平常登入 Google 的密碼）。個人 Gmail 帳戶另有寄信與收件人數量限制，詳見 [Google 官方寄信限制](https://support.google.com/mail/answer/22839?hl=zh-Hant)。
 
 在 PowerShell 執行一次（密碼請去掉空格）：
 
@@ -134,7 +136,7 @@ reg delete HKCU\Environment /v EMAIL_HOST /f
 python manage.py sendtestemail 你要收信的信箱@example.com
 ```
 
-沒有出現錯誤、收件匣（或垃圾郵件匣）收到信，就代表設定正確。
+已設定 SMTP 時，收件匣（或垃圾郵件匣）收到信就代表寄信設定正常。若沒有設定 SMTP，Django 會使用終端機郵件後端；測試郵件會印在執行這個指令的終端機，不會真的寄出。
 
 再用瀏覽器測試：
 
@@ -210,11 +212,7 @@ python -m pip install -r requirements.txt
 python manage.py migrate
 ```
 
-新增了套件的人，請記得更新 `requirements.txt` 並提交：
-
-```powershell
-python -m pip freeze > requirements.txt
-```
+新增直接依賴時，請把套件與版本範圍寫入 `requirements.txt` 並提交。保留必要的 extras，例如 `django-allauth[socialaccount]`；不要直接用 `pip freeze > requirements.txt` 覆蓋，因為它可能把 extras 規格改成單純套件版本，讓乾淨環境缺少所需功能。
 
 ## 疑難排解
 
