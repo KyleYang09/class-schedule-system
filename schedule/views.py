@@ -93,7 +93,7 @@ def build_grid(slots, detail, today, now):
             )
     for row in rows:
         for cell in row['cells']:
-            if 'name' in cell:
+            if 'name' in cell and not cell.get('skip'):
                 cell['vertical'] = fits_vertically(cell)
     return {
         'days': [

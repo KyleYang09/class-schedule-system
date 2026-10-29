@@ -34,6 +34,26 @@ COURSES = {
 
 SATURDAY_EXTRA = [('企管二甲', '財務管理', 6, '2', 'B201')]
 
+# Rows are mapped to periods 1–9 in order; the first occupied row in the source
+# image is period 2. Repeated rows represent consecutive periods of one course.
+CLASS_SCHEDULES = {
+    '資管三甲': [
+        ('資訊管理理論', '黃燕萍', 1, ('2', '3', '4'), '電708(承曦樓)'),
+        ('體育三(上)', '李俞麟', 1, ('5', '6'), '藝406'),
+        ('電子商務', '唐日新', 2, ('2', '3', '4'), '藝406'),
+        ('網站應用程式設計', '林俊杰', 2, ('5',), '電708(承曦樓)'),
+        ('網站應用程式設計實習', '林俊杰', 2, ('6', '7'), '電708(承曦樓)'),
+        ('系統分析與設計(上)', '丁慧瑩', 3, ('2', '3'), '藝406'),
+        ('系統分析與設計(上)實習', '丁慧瑩', 3, ('4',), '藝406'),
+        ('電腦網路(上)', '謝文敏', 3, ('5', '6'), '資401'),
+        ('微積分(上)', '陳秋良', 3, ('7', '8', '9'), '藝406'),
+        ('國文(三)(上)', '許佩玉', 4, ('2', '3', '4'), '藝406'),
+        ('英文(三)(上)', '王燕惠', 5, ('2', '3', '4'), '藝406'),
+    ],
+}
+
+CLASS_NAME_ALIASES = {'資管系三年甲班': '資管三甲'}
+
 DAY_PAIRS = [(1, 4), (2, 5), (1, 3), (2, 4), (3, 5)]
 DEMO_USERNAME = 'admin'
 DEMO_PASSWORD = 'demo1234'
@@ -46,6 +66,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not settings.DEBUG:
             raise CommandError('示範資料只能在開發環境(DEBUG=1)建立')
+
+        for old_name, new_name in CLASS_NAME_ALIASES.items():
+            old_class = ClassGroup.objects.filter(name=old_name).first()
+            if old_class:
+                if ClassGroup.objects.filter(name=new_name).exists():
+                    raise CommandError(
+                        f'資料庫同時有「{old_name}」和「{new_name}」，請先合併班級資料再執行。'
+                    )
+                old_class.name = new_name
+                old_class.save(update_fields=['name'])
 
         periods = {
             code: Period.objects.update_or_create(
@@ -89,6 +119,27 @@ class Command(BaseCommand):
                     busy['class_group_id'].add((class_group.id, day, period.id))
                     busy['teacher_id'].add((course.teacher_id, day, period.id))
                     busy['room_id'].add((room.id, day, period.id))
+
+        for class_name, schedule in CLASS_SCHEDULES.items():
+            class_group = ClassGroup.objects.get_or_create(name=class_name)[0]
+            for course_name, teacher_name, weekday, period_codes, room_name in schedule:
+                teacher = Teacher.objects.get_or_create(name=teacher_name)[0]
+                room = Room.objects.get_or_create(name=room_name)[0]
+                course, _ = Course.objects.update_or_create(
+                    class_group=class_group,
+                    name=course_name,
+                    defaults={'teacher': teacher},
+                )
+                for period_code in period_codes:
+                    period = periods.get(period_code)
+                    if period is None:
+                        raise CommandError(f'課表使用了未設定的第 {period_code} 節')
+                    Slot.objects.update_or_create(
+                        course=course,
+                        weekday=weekday,
+                        period=period,
+                        defaults={'room': room},
+                    )
 
         for class_name, course_name, day, period_code, room_name in SATURDAY_EXTRA:
             course = Course.objects.get(class_group__name=class_name, name=course_name)
