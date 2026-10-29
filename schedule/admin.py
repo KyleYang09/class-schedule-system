@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
 
 from .models import ClassGroup, Course, CourseOverride, Period, Profile, Room, Slot, Teacher
 
@@ -7,6 +8,15 @@ admin.site.site_title = '課表維護系統'
 admin.site.index_title = '資料管理'
 
 admin.site.register([ClassGroup, Room, Period])
+
+USER_MODEL_META = get_user_model()._meta
+USER_DELETE_PERMISSION = (
+    f'{USER_MODEL_META.app_label}.delete_{USER_MODEL_META.model_name}'
+)
+USER_DELETE_ROUTES = {
+    f'{USER_MODEL_META.app_label}_{USER_MODEL_META.model_name}_delete',
+    f'{USER_MODEL_META.app_label}_{USER_MODEL_META.model_name}_changelist',
+}
 
 
 @admin.register(Course)
@@ -32,7 +42,12 @@ class CourseOverrideAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        route = getattr(request, 'resolver_match', None)
+        return bool(
+            route
+            and route.url_name in USER_DELETE_ROUTES
+            and request.user.has_perm(USER_DELETE_PERMISSION)
+        )
 
 
 @admin.register(Slot)
