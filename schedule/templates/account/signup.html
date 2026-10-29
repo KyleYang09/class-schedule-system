@@ -1,0 +1,56 @@
+{% extends "account/auth_base.html" %}
+{% load socialaccount %}
+
+{% block auth_title %}註冊{% endblock %}
+{% block heading %}註冊{% endblock %}
+{% block lead %}建立帳號，之後可以保存並查看你的課表{% endblock %}
+
+{% block auth_body %}
+  <form class="auth-form" method="post" action="{% url 'account_signup' %}" data-pending="註冊中…" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="auth-form__alert" role="alert">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    {% if form.errors %}
+      <div class="auth-form__error-summary" role="alert" tabindex="-1">
+        <strong>資料尚未符合格式，請檢查以下欄位：</strong>
+        <ul>
+          {% for field in form.visible_fields %}
+            {% for error in field.errors %}<li>{{ field.label }}：{{ error }}</li>{% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% include "account/_fields.html" %}
+
+    {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+    {% endif %}
+
+    <button type="submit" class="btn auth-form__submit">建立帳號</button>
+    <p class="auth-form__aside">註冊後會寄送驗證信，完成驗證才能登入</p>
+  </form>
+
+  {% get_providers as providers %}
+  {% if providers %}
+    <p class="auth-divider"><span>或</span></p>
+    {% for provider in providers %}
+      <form method="post" action="{% provider_login_url provider process='login' %}" data-pending="前往 {% if provider.id == 'line' %}LINE{% else %}{{ provider.name }}{% endif %}…">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+        <button type="submit" class="btn btn--quiet auth-form__submit">使用 {% if provider.id == 'line' %}LINE{% else %}{{ provider.name }}{% endif %} 繼續</button>
+      </form>
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
+{% block auth_foot %}
+  <p class="auth__foot">已經有帳號？<a href="{% url 'account_login' %}">登入</a></p>
+{% endblock %}

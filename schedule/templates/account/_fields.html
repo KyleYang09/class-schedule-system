@@ -1,0 +1,12 @@
+{% for field in form.visible_fields %}
+  <div class="auth-form__row{% if field.errors %} auth-form__row--invalid{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% for error in field.errors %}
+      <p class="auth-form__error" id="{{ field.auto_id }}_error" role="alert">{{ error }}</p>
+    {% endfor %}
+    {% if field.help_text %}
+      <div class="auth-form__help" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>
+    {% endif %}
+  </div>
+{% endfor %}
