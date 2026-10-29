@@ -24,7 +24,10 @@
     dialog: $('editor'),
     openButton: $('editor-open'),
     classSelect: $('my-class'),
+    courseSearch: $('course-search'),
     courseList: $('my-courses'),
+    courseEmpty: $('my-courses-empty'),
+    courseCount: $('my-courses-count'),
     draftList: $('draft-list'),
     draftEmpty: $('draft-empty'),
     draftCount: $('draft-count'),
@@ -122,6 +125,7 @@
     wrap.setAttribute('role', 'region');
     wrap.setAttribute('aria-label', options.compact ? '課表預覽' : '我的課表');
     wrap.tabIndex = 0;
+    board.append(el('p', 'sheet-hint', '左右滑動查看完整課表'));
     const table = el('table', options.compact ? 'grid grid--compact' : 'grid');
 
     const thead = el('thead');
@@ -218,7 +222,7 @@
     main.empty.hidden = hasSelection;
     main.grid.hidden = !hasSelection;
     main.conflicts.hidden = clashes.length === 0;
-    if (clashes.length) main.conflicts.textContent = `有 ${clashes.length} 個時段衝突。${clashes.join(';')}`;
+    if (clashes.length) main.conflicts.textContent = `目前有 ${clashes.length} 個時段衝突：${clashes.join('；')}。衝突課程仍保留在課表中。`;
 
     if (hasSelection) renderGrid(main.grid, cells, FULL);
     else main.grid.replaceChildren();
@@ -239,6 +243,9 @@
   }
 
   function syncLayout() {
+    editor.tabs[2].tab.hidden = wide.matches;
+    editor.tabs[2].panel.setAttribute('role', wide.matches ? 'region' : 'tabpanel');
+    editor.tabs[2].panel.setAttribute('aria-labelledby', wide.matches ? 'preview-heading' : 'tab-preview');
     if (wide.matches && activeTab === 'preview') setTab('pick');
     else setTab(activeTab);
   }
@@ -265,7 +272,20 @@
     const classId = Number(editor.classSelect.value);
     courseRefs.clear();
     editor.courseList.replaceChildren();
-    data.courses.filter((course) => course.classId === classId).forEach((course) => {
+    const query = editor.courseSearch.value.trim().toLocaleLowerCase();
+    const classCourses = data.courses.filter((course) => course.classId === classId);
+    const courses = classCourses.filter((course) =>
+      `${course.name} ${course.teacher}`.toLocaleLowerCase().includes(query),
+    );
+    editor.courseEmpty.hidden = courses.length > 0;
+    editor.courseEmpty.textContent = !data.classes.length
+      ? '目前沒有班級資料，請聯絡管理員。'
+      : !classCourses.length
+        ? '這個班級目前沒有可選課程，請切換班級或稍後再試。'
+        : '找不到符合的課程或教師，請調整搜尋文字。';
+    editor.courseCount.textContent = `顯示 ${courses.length} 門課程`;
+    if (data.classes.length === 0) editor.classSelect.disabled = true;
+    courses.forEach((course) => {
       const item = el('li');
       const label = el('label', 'course-option');
       const box = el('input');
@@ -321,7 +341,7 @@
     editor.previewEmpty.hidden = hasDraft;
     editor.previewGrid.hidden = !hasDraft;
     editor.conflicts.hidden = clashes.length === 0;
-    if (clashes.length) editor.conflicts.textContent = `有 ${clashes.length} 個時段衝突。${clashes.join(';')}`;
+    if (clashes.length) editor.conflicts.textContent = `有 ${clashes.length} 個時段衝突：${clashes.join('；')}。衝突課程仍可儲存，儲存後會同時保留。`;
     if (hasDraft) renderGrid(editor.previewGrid, cells, COMPACT);
     else editor.previewGrid.replaceChildren();
   }
@@ -351,6 +371,7 @@
 
   function openEditor() {
     draft = new Set(selected);
+    editor.courseSearch.value = '';
     const lastId = Array.from(draft).pop();
     editor.classSelect.value = lastId ? courseById.get(lastId).classId : data.classes[0]?.id;
     setTab('pick');
@@ -385,6 +406,7 @@
       editor.tabs[1].tab.focus();
     });
     editor.classSelect.addEventListener('change', renderCourseList);
+    editor.courseSearch.addEventListener('input', renderCourseList);
     editor.dialog.addEventListener('cancel', (event) => {
       event.preventDefault();
       closeEditor(false);
@@ -405,5 +427,6 @@
   }
 
   initEditor();
+  syncLayout();
   renderMain();
 })();

@@ -3,13 +3,13 @@
 
 {% block auth_title %}登入{% endblock %}
 {% block heading %}登入{% endblock %}
-{% block lead %}登入後可查看與管理你的課表{% endblock %}
+{% block lead %}登入後可完成身分設定；「我的課表」只儲存在這個瀏覽器，不會同步到其他裝置{% endblock %}
 
 {% block auth_body %}
   <form class="auth-form" method="post" action="{% url 'account_login' %}" data-pending="登入中…" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}
-      <div class="auth-form__alert" role="alert">
+      <div class="auth-form__alert" role="alert" tabindex="-1">
         {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
       </div>
     {% endif %}

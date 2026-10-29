@@ -142,6 +142,46 @@ a { color: var(--ink); }
   font-weight: 800;
   border-bottom-color: var(--ink);
 }
+.nav-group { position: relative; }
+.nav-group summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--umber);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  list-style: none;
+  cursor: pointer;
+}
+.nav-group summary::-webkit-details-marker { display: none; }
+.nav-group summary::after { content: "⌄"; font-size: 0.875rem; }
+.nav-group summary:hover,
+.nav-group summary[aria-current="page"] { color: var(--ink); }
+.nav-group summary[aria-current="page"] { font-weight: 800; }
+.nav-group__menu {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 180px;
+  padding: var(--space-2);
+  background: var(--page);
+  border: 1px solid var(--edge);
+  box-shadow: 3px 3px 0 var(--shade);
+}
+.nav-group__menu a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  color: var(--umber);
+  text-decoration: none;
+}
+.nav-group__menu a:hover,
+.nav-group__menu a[aria-current="page"] { background: var(--tile-empty); color: var(--ink); }
+.nav-group__menu a[aria-current="page"] { font-weight: 800; }
 .admin-link { font-size: 0.875rem; }
 .header-tools { display: flex; align-items: center; gap: var(--space-4); }
 .theme-toggle {
@@ -193,6 +233,7 @@ a { color: var(--ink); }
   font-size: 0.875rem;
   color: var(--umber);
 }
+.course-search-label { margin-top: var(--space-3); }
 .picker__filter,
 .field {
   width: 100%;
@@ -303,6 +344,7 @@ a { color: var(--ink); }
   pointer-events: none;
 }
 .sheet { overflow-x: auto; margin: 0 calc(var(--gap) * -1); }
+.sheet-hint { display: none; }
 .grid {
   width: calc(100% + 0px);
   min-width: 900px;
@@ -728,6 +770,13 @@ body:has(dialog[open]) .fab { visibility: hidden; }
   .grid { min-width: 820px; }
   .board { padding: var(--space-2); }
   .content__head h1 { font-size: 1.875rem; }
+  .sheet-hint {
+    display: block;
+    margin: 0 var(--space-2) var(--space-2);
+    color: var(--umber);
+    font-size: 0.8125rem;
+    text-align: right;
+  }
 }
 
 @media print {
@@ -736,6 +785,7 @@ body:has(dialog[open]) .fab { visibility: hidden; }
   .layout { display: block; }
   .page { padding: 0; }
   .sheet { overflow: visible; margin: 0; }
+  .sheet-hint { display: none; }
   .grid { min-width: 0; }
 }
 

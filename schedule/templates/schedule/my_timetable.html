@@ -39,6 +39,10 @@
         <section id="panel-pick" role="tabpanel" aria-labelledby="tab-pick" class="editor__panel">
           <label class="picker__label" for="my-class">班級</label>
           <select id="my-class" class="field"></select>
+          <label class="picker__label course-search-label" for="course-search">搜尋課程或教師</label>
+          <input id="course-search" class="picker__filter" type="search" autocomplete="off" placeholder="輸入課名或教師姓名">
+          <p id="my-courses-empty" class="picker__empty" role="status" hidden></p>
+          <p id="my-courses-count" class="sr-only" aria-live="polite"></p>
           <ul id="my-courses" class="course-list"></ul>
         </section>
         <section id="panel-selected" role="tabpanel" aria-labelledby="tab-selected" class="editor__panel" hidden>
@@ -51,6 +55,7 @@
         </section>
       </div>
       <section id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" class="editor__panel editor__preview" hidden>
+        <h3 id="preview-heading" class="sr-only">課表預覽</h3>
         <div id="draft-conflicts" class="notice" role="status" hidden></div>
         <div id="preview-empty" class="empty" hidden>
           <h2>預覽</h2>
