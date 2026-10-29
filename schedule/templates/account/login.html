@@ -3,7 +3,7 @@
 
 {% block auth_title %}登入{% endblock %}
 {% block heading %}登入{% endblock %}
-{% block lead %}登入後可完成身分設定；「我的課表」只儲存在這個瀏覽器，不會同步到其他裝置{% endblock %}
+{% block lead %}登入後可查看和管理帳號課表，也能在其他裝置繼續使用{% endblock %}
 
 {% block auth_body %}
   <form class="auth-form" method="post" action="{% url 'account_login' %}" data-pending="登入中…" novalidate>

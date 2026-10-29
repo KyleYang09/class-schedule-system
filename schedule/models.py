@@ -78,6 +78,7 @@ class Course(models.Model):
     teacher = models.ForeignKey(
         Teacher, on_delete=models.PROTECT, related_name='courses', verbose_name='授課教師'
     )
+    is_required = models.BooleanField('必修', default=True)
 
     class Meta:
         ordering = ['class_group__name', 'name']
@@ -102,6 +103,35 @@ class Course(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.slots.update(class_group_id=self.class_group_id, teacher_id=self.teacher_id)
+
+
+class CourseOverride(models.Model):
+    class Action(models.TextChoices):
+        ADD = 'add', '加選'
+        DROP = 'drop', '退選'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='course_overrides', verbose_name='使用者',
+    )
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name='user_overrides', verbose_name='課程',
+    )
+    action = models.CharField('異動', max_length=4, choices=Action)
+    created_at = models.DateTimeField('建立時間', auto_now_add=True)
+    updated_at = models.DateTimeField('更新時間', auto_now=True)
+
+    class Meta:
+        ordering = ['course__class_group__name', 'course__name']
+        verbose_name = verbose_name_plural = '個人選課異動'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'course'], name='course_override_unique_user_course',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user}　{self.get_action_display()}　{self.course}'
 
 
 class Slot(models.Model):

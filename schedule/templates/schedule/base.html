@@ -20,7 +20,7 @@
   <header class="site-header">
     <div class="site-header__inner">
       <a class="brand" href="{% url 'my_timetable' %}">課表維護系統</a>
-      <nav class="nav" aria-label="主選單">
+      <nav class="nav" id="site-nav" aria-label="主選單">
         <a href="{% url 'my_timetable' %}"{% if nav == 'my' %} aria-current="page"{% endif %}>我的課表</a>
         <a href="{% url 'class_index' %}"{% if nav == 'class' %} aria-current="page"{% endif %}>班級課表</a>
         <a href="{% url 'teacher_index' %}"{% if nav == 'teacher' %} aria-current="page"{% endif %}>教師課表</a>
@@ -33,6 +33,7 @@
             <a href="{% url 'jai_chen' %}"{% if nav == 'jai_chen' %} aria-current="page"{% endif %}>jia_chen的課表</a>
           </div>
         </details>
+        <a class="nav__admin-link" href="{% url 'admin:index' %}">資料管理</a>
       </nav>
       <div class="header-tools">
         <a class="admin-link" href="{% url 'admin:index' %}">資料管理</a>
@@ -43,6 +44,11 @@
             <path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>
           </svg>
         </button>
+        <button type="button" class="menu-toggle theme-toggle" id="menu-toggle" aria-label="開啟主選單" aria-controls="site-nav" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -50,6 +56,7 @@
     {% block content %}{% endblock %}
   </main>
   <script src="{% asset 'schedule/js/theme.js' %}"></script>
+  <script src="{% asset 'schedule/js/navigation.js' %}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

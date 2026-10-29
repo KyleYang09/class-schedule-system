@@ -1,5 +1,6 @@
 .site-header .nav,
-.site-header .admin-link { display: none; }
+.site-header .admin-link,
+.site-header .menu-toggle { display: none; }
 .site-header .header-tools { margin-left: auto; }
 
 .auth {

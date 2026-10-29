@@ -17,11 +17,13 @@
   const main = {
     summary: $('my-summary'),
     conflicts: $('my-conflicts'),
+    saveMessage: $('my-save-message'),
     empty: $('my-empty'),
     grid: $('my-grid'),
   };
   const editor = {
     dialog: $('editor'),
+    form: $('editor-form'),
     openButton: $('editor-open'),
     classSelect: $('my-class'),
     courseSearch: $('course-search'),
@@ -45,9 +47,12 @@
     })),
   };
 
-  let selected = load();
+  const serverSelected = new Set(data.selectedIds);
+  const legacySelected = load();
+  let selected = new Set([...serverSelected, ...legacySelected]);
   let draft = new Set();
   let activeTab = 'pick';
+  let saving = false;
   const courseRefs = new Map();
   const wide = window.matchMedia('(min-width: 900px)');
 
@@ -57,14 +62,6 @@
       return new Set(saved.filter((id) => courseById.has(id)));
     } catch (error) {
       return new Set();
-    }
-  }
-
-  function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(selected)));
-    } catch (error) {
-      /* storage unavailable: selection lasts for this visit only */
     }
   }
 
@@ -208,6 +205,40 @@
     table.append(body);
     wrap.append(table);
     board.append(wrap);
+    const agenda = el('div', 'agenda');
+    agenda.setAttribute('aria-label', options.compact ? '課表預覽，手機版每日課程' : '我的課表，手機版每日課程');
+    data.weekdays.forEach((day) => {
+      const section = el('details', `agenda__day${day.number === today ? ' is-today' : ''}`);
+      if (day.number === today) section.open = true;
+      const heading = el('summary', '', day.label);
+      const lessonCount = data.periods.reduce(
+        (count, period) => count + (cells.get(`${day.number}-${period.id}`) || []).length,
+        0,
+      );
+      heading.append(el('span', '', `${day.number === today ? '今天・' : ''}${lessonCount} 節`));
+      section.append(heading);
+      const list = el('ol');
+      data.periods.forEach((period) => {
+        const entries = cells.get(`${day.number}-${period.id}`) || [];
+        if (!entries.length) return;
+        entries.forEach(({ course, slot }) => {
+          const item = el('li', `agenda__lesson${entries.length > 1 ? ' is-conflict' : ''}`);
+          const time = el('span', 'agenda__time');
+          time.append(`第${period.code}節`, el('small', '', `${period.start}–${period.end}`));
+          const info = el('span', 'agenda__course');
+          info.append(el('strong', '', course.name));
+          if (!options.compact) info.append(el('small', '', `${course.className}・${course.teacher}`));
+          info.append(el('small', '', slot.room));
+          item.append(time, info);
+          if (entries.length > 1) item.append(el('small', 'agenda__conflict', '衝堂'));
+          list.append(item);
+        });
+      });
+      if (list.childElementCount) section.append(list);
+      else section.append(el('p', 'agenda__empty', '今天沒有課程'));
+      agenda.append(section);
+    });
+    board.append(agenda);
     host.replaceChildren(board);
   }
 
@@ -222,11 +253,15 @@
     main.empty.hidden = hasSelection;
     main.grid.hidden = !hasSelection;
     main.conflicts.hidden = clashes.length === 0;
-    if (clashes.length) main.conflicts.textContent = `目前有 ${clashes.length} 個時段衝突：${clashes.join('；')}。衝突課程仍保留在課表中。`;
+    if (clashes.length) main.conflicts.textContent = `目前有 ${clashes.length} 個時段衝突：${clashes.join('；')}。請編輯課表調整後再儲存。`;
 
     if (hasSelection) renderGrid(main.grid, cells, FULL);
     else main.grid.replaceChildren();
     editor.openButton.textContent = hasSelection ? `編輯課表(${selected.size})` : '編輯課表';
+    if (legacySelected.size) {
+      main.saveMessage.hidden = false;
+      main.saveMessage.textContent = '偵測到此瀏覽器先前儲存的課表；按「編輯課表」並儲存，即可匯入帳號。';
+    }
   }
 
   /* ---------- Editor ---------- */
@@ -290,10 +325,20 @@
       const label = el('label', 'course-option');
       const box = el('input');
       box.type = 'checkbox';
+      const locked = data.requiredIds.includes(course.id);
+      box.disabled = locked;
       box.addEventListener('change', () => toggleDraft(course.id, box.checked));
       const text = el('span', 'course-option__text');
       const clash = el('small', 'course-option__clash', '與已選課程時段衝突');
-      text.append(el('strong', '', course.name), el('small', '', `${course.teacher}・${slotText(course) || '未排時段'}`), clash);
+      text.append(el('strong', '', course.name), el('small', '', `${course.teacher}・${slotText(course) || '未排時段'}`));
+      if (locked) {
+        const badge = el('small', 'course-option__locked');
+        const icon = el('span', '', '🔒');
+        icon.setAttribute('aria-hidden', 'true');
+        badge.append(icon, el('span', '', '必修・不可退選'));
+        text.append(badge);
+      }
+      text.append(clash);
       label.append(box, text);
       item.append(label);
       editor.courseList.append(item);
@@ -314,22 +359,30 @@
     editor.draftList.replaceChildren();
     const ids = Array.from(draft);
     editor.draftEmpty.hidden = ids.length > 0;
-    editor.clearButton.hidden = ids.length === 0;
+    editor.clearButton.hidden = !ids.some((id) => !data.requiredIds.includes(id));
     ids.map((id) => courseById.get(id)).forEach((course) => {
       const item = el('li');
       const text = el('span');
       text.append(el('strong', '', course.name), el('small', '', `${course.className}・${course.teacher}・${slotText(course)}`));
-      const remove = el('button', 'btn btn--quiet', '移除');
-      remove.type = 'button';
-      remove.setAttribute('aria-label', `移除 ${course.name}`);
-      remove.addEventListener('click', () => {
-        const buttons = Array.from(editor.draftList.querySelectorAll('button'));
-        const index = buttons.indexOf(remove);
-        toggleDraft(course.id, false);
-        const next = editor.draftList.querySelectorAll('button')[Math.min(index, draft.size - 1)];
-        (next || editor.tabs[1].tab).focus();
-      });
-      item.append(text, remove);
+      if (data.requiredIds.includes(course.id)) {
+        const badge = el('small', 'course-option__locked');
+        const icon = el('span', '', '🔒');
+        icon.setAttribute('aria-hidden', 'true');
+        badge.append(icon, el('span', '', '必修'));
+        item.append(text, badge);
+      } else {
+        const remove = el('button', 'btn btn--quiet', '移除');
+        remove.type = 'button';
+        remove.setAttribute('aria-label', `移除 ${course.name}`);
+        remove.addEventListener('click', () => {
+          const buttons = Array.from(editor.draftList.querySelectorAll('button'));
+          const index = buttons.indexOf(remove);
+          toggleDraft(course.id, false);
+          const next = editor.draftList.querySelectorAll('button')[Math.min(index, draft.size - 1)];
+          (next || editor.tabs[1].tab).focus();
+        });
+        item.append(text, remove);
+      }
       editor.draftList.append(item);
     });
   }
@@ -341,19 +394,24 @@
     editor.previewEmpty.hidden = hasDraft;
     editor.previewGrid.hidden = !hasDraft;
     editor.conflicts.hidden = clashes.length === 0;
-    if (clashes.length) editor.conflicts.textContent = `有 ${clashes.length} 個時段衝突：${clashes.join('；')}。衝突課程仍可儲存，儲存後會同時保留。`;
+    if (clashes.length) editor.conflicts.textContent = `有 ${clashes.length} 個時段衝突：${clashes.join('；')}。請調整選課後再儲存。`;
     if (hasDraft) renderGrid(editor.previewGrid, cells, COMPACT);
     else editor.previewGrid.replaceChildren();
   }
 
   function renderFooter() {
-    const added = Array.from(draft).filter((id) => !selected.has(id)).length;
-    const removed = Array.from(selected).filter((id) => !draft.has(id)).length;
-    const changed = added + removed > 0;
+    const added = Array.from(draft).filter((id) => !serverSelected.has(id)).length;
+    const removed = Array.from(serverSelected).filter((id) => !draft.has(id)).length;
+    const changed = added + removed > 0 || legacySelected.size > 0;
+    const conflicts = findClashes(buildCells(draft));
+    const hasConflicts = conflicts.length > 0;
     editor.diff.textContent = changed
-      ? [added ? `新增 ${added} 門` : '', removed ? `移除 ${removed} 門` : ''].filter(Boolean).join('、') + `,共 ${draft.size} 門`
-      : `沒有變更,目前 ${draft.size} 門課`;
-    editor.saveButton.disabled = !changed;
+      ? [added ? `新增 ${added} 門` : '', removed ? `移除 ${removed} 門` : ''].filter(Boolean).join('、') + `，共 ${draft.size} 門`
+      : `沒有變更，目前 ${draft.size} 門課`;
+    if (legacySelected.size) editor.diff.textContent += '（包含此瀏覽器舊課表）';
+    if (hasConflicts) editor.diff.textContent = `有 ${conflicts.length} 個時段衝突，請前往「預覽」查看並處理。`;
+    if (saving) editor.diff.textContent = '正在儲存課表…';
+    editor.saveButton.disabled = !changed || hasConflicts || saving;
     editor.draftCount.textContent = `(${draft.size})`;
     return changed;
   }
@@ -373,7 +431,7 @@
     draft = new Set(selected);
     editor.courseSearch.value = '';
     const lastId = Array.from(draft).pop();
-    editor.classSelect.value = lastId ? courseById.get(lastId).classId : data.classes[0]?.id;
+    editor.classSelect.value = lastId ? courseById.get(lastId).classId : data.defaultClassId || data.classes[0]?.id;
     setTab('pick');
     renderEditor();
     editor.dialog.showModal();
@@ -384,11 +442,44 @@
     editor.dialog.close();
   }
 
-  function saveEditor() {
-    selected = new Set(draft);
-    save();
-    renderMain();
-    editor.dialog.close();
+  async function saveEditor() {
+    if (saving || editor.saveButton.disabled) return;
+    saving = true;
+    renderFooter();
+    const formData = new FormData(editor.form);
+    draft.forEach((id) => formData.append('course_ids', id));
+    try {
+      const response = await fetch(editor.form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        const conflictText = (result.conflicts || []).map((conflict) =>
+          `${conflict.day} 第${conflict.period}節：${conflict.courses.join('、')}`,
+        ).join('；');
+        editor.conflicts.textContent = conflictText ? `${result.error} ${conflictText}` : result.error;
+        editor.conflicts.hidden = false;
+        return;
+      }
+      serverSelected.clear();
+      result.selectedIds.forEach((id) => serverSelected.add(id));
+      selected = new Set(serverSelected);
+      legacySelected.clear();
+      try { localStorage.removeItem(STORAGE_KEY); } catch (error) {}
+      renderMain();
+      editor.dialog.close();
+      main.saveMessage.hidden = false;
+      main.saveMessage.textContent = '課表已儲存到你的帳號。';
+    } catch (error) {
+      editor.conflicts.textContent = '儲存失敗，請確認網路連線或重新登入後再試。';
+      editor.conflicts.hidden = false;
+    } finally {
+      saving = false;
+      renderFooter();
+    }
   }
 
   function initEditor() {
@@ -401,7 +492,7 @@
     editor.cancelButton.addEventListener('click', () => closeEditor(false));
     editor.saveButton.addEventListener('click', saveEditor);
     editor.clearButton.addEventListener('click', () => {
-      draft = new Set();
+      draft = new Set(data.requiredIds);
       renderEditor();
       editor.tabs[1].tab.focus();
     });

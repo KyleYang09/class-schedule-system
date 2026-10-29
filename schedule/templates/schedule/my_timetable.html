@@ -13,10 +13,11 @@
       <span>{{ today_date|date:'l' }}</span>
     </time>
   </header>
-  <div id="my-conflicts" class="notice" role="alert" hidden></div>
+  <div id="my-save-message" class="notice" role="status" hidden></div>
+  <div id="my-conflicts" class="notice notice--conflict" role="alert" hidden></div>
   <div id="my-empty" class="empty" hidden>
     <h2>還沒有加入任何課程</h2>
-    <p>點右下角的「編輯課表」,挑選想修的課,先預覽再儲存。課表只存在這個瀏覽器,不需要登入。</p>
+    <p>點右下角的「編輯課表」挑選課程，再儲存到帳號。登入後可在其他裝置查看；班級必修會自動加入且不能退選。</p>
   </div>
   <div id="my-grid"></div>
 </section>
@@ -24,10 +25,11 @@
 <button type="button" class="fab" id="editor-open">編輯課表</button>
 
 <dialog id="editor" class="editor" aria-labelledby="editor-title">
-  <div class="editor__frame">
+  <form class="editor__frame" id="editor-form" method="post" action="{% url save_url %}">
+    {% csrf_token %}
     <header class="editor__head">
       <h2 id="editor-title">編輯課表</h2>
-      <p>加入或移除課程,右邊會即時預覽。按「儲存變更」才會套用。</p>
+      <p>課表會即時預覽；必修不能退選，衝堂需處理後才能儲存。</p>
     </header>
     <div class="tabs" role="tablist" aria-label="編輯項目">
       <button type="button" role="tab" id="tab-pick" aria-controls="panel-pick" aria-selected="true">加入課程</button>
@@ -48,7 +50,7 @@
         <section id="panel-selected" role="tabpanel" aria-labelledby="tab-selected" class="editor__panel" hidden>
           <div class="selected__head">
             <h3>已選課程</h3>
-            <button type="button" class="btn btn--quiet" id="draft-clear">全部移除</button>
+            <button type="button" class="btn btn--quiet" id="draft-clear">移除所有可退選課程</button>
           </div>
           <p class="picker__empty" id="draft-empty" hidden>還沒有選任何課程。</p>
           <ul id="draft-list" class="draft-list"></ul>
@@ -56,7 +58,7 @@
       </div>
       <section id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" class="editor__panel editor__preview" hidden>
         <h3 id="preview-heading" class="sr-only">課表預覽</h3>
-        <div id="draft-conflicts" class="notice" role="status" hidden></div>
+        <div id="draft-conflicts" class="notice notice--conflict" role="status" hidden></div>
         <div id="preview-empty" class="empty" hidden>
           <h2>預覽</h2>
           <p>加入課程後,課表會顯示在這裡。</p>
@@ -71,7 +73,7 @@
         <button type="button" class="btn" id="editor-save">儲存變更</button>
       </div>
     </footer>
-  </div>
+  </form>
 </dialog>
 {{ data|json_script:"timetable-data" }}
 {% endblock %}

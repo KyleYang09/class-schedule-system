@@ -43,4 +43,27 @@
       </tbody>
     </table>
   </div>
+  <div class="agenda" aria-label="{{ label }}，手機版每日課程">
+    {% for day in grid.days %}
+      <details class="agenda__day{% if day.number == today %} is-today{% endif %}"{% if day.number == today %} open{% endif %}>
+        <summary>{{ day.label }}<span>{% if day.number == today %}今天・{% endif %}{{ day.lesson_count }} 節</span></summary>
+        {% if day.has_lessons %}
+          <ol>
+            {% for row in grid.rows %}
+              {% for cell in row.cells %}
+                {% if forloop.counter == day.number and cell.name %}
+                  <li class="agenda__lesson">
+                    <span class="agenda__time">第{{ row.period.code }}節<small>{{ row.period.start_time|time:'H:i' }}–{{ row.period.end_time|time:'H:i' }}</small></span>
+                    <span class="agenda__course"><strong>{{ cell.name }}</strong>{% for text in cell.details %}<small>{{ text }}</small>{% endfor %}<small>{{ cell.room }}</small></span>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="agenda__empty">今天沒有課程</p>
+        {% endif %}
+      </details>
+    {% endfor %}
+  </div>
 </div>

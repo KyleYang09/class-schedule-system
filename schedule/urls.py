@@ -6,6 +6,7 @@ from . import views
 urlpatterns = [
     path('', views.my_timetable, name='my_timetable'),
     path('my/', RedirectView.as_view(pattern_name='my_timetable')),
+    path('my/update/', views.update_my_timetable, name='update_my_timetable'),
     path('classes/', views.class_timetable, name='class_index'),
     path('classes/<int:pk>/', views.class_timetable, name='class_timetable'),
     path('teachers/', views.teacher_timetable, name='teacher_index'),

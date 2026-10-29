@@ -32,6 +32,22 @@
   }
 
   forms.forEach(function (form) {
+    form.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' || event.isComposing || event.target.tagName === 'TEXTAREA') return;
+      var fields = Array.from(form.querySelectorAll(
+        'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]), select',
+      )).filter(function (field) {
+        return !field.disabled && !field.closest('[hidden]');
+      });
+      var index = fields.indexOf(event.target);
+      if (index < 0) return;
+
+      event.preventDefault();
+      if (index < fields.length - 1) fields[index + 1].focus();
+      else if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.submit();
+    });
+
     form.addEventListener('submit', function (event) {
       var button = form.querySelector('button[type="submit"]');
       if (!button || button.disabled) {

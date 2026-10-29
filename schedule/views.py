@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
-from django.http import Http404
+from django.db import IntegrityError, transaction
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from .forms import OnboardingForm
-from .models import ClassGroup, Course, Period, Profile, Slot, Teacher, Weekday
+from .models import ClassGroup, Course, CourseOverride, Period, Profile, Slot, Teacher, Weekday
 
 FILL_COUNT = 4
 TILE_HEIGHT = 100
@@ -72,7 +72,14 @@ def build_grid(slots, detail, today, now):
                 owner = above.get('merged_into') or above
                 if owner.get('course_id') == slot.course_id and owner.get('room') == slot.room.name:
                     owner['rowspan'] += 1
-                    row['cells'].append({'skip': True, 'merged_into': owner, 'course_id': slot.course_id})
+                    row['cells'].append({
+                        'skip': True,
+                        'merged_into': owner,
+                        'course_id': slot.course_id,
+                        'name': slot.course.name,
+                        'details': [detail(slot)],
+                        'room': slot.room.name,
+                    })
                     continue
             row['cells'].append(
                 {
@@ -89,7 +96,16 @@ def build_grid(slots, detail, today, now):
             if 'name' in cell:
                 cell['vertical'] = fits_vertically(cell)
     return {
-        'days': [{'number': day, 'label': WEEKDAY_LABELS[day], 'weekend': day > 5} for day in days],
+        'days': [
+            {
+                'number': day,
+                'label': WEEKDAY_LABELS[day],
+                'weekend': day > 5,
+                'has_lessons': any(slot.weekday == day for slot in slots),
+                'lesson_count': sum(slot.weekday == day for slot in slots),
+            }
+            for day in days
+        ],
         'rows': rows,
         'has_weekend': any(slot.weekday > 5 for slot in slots),
     }
@@ -137,7 +153,35 @@ def teacher_timetable(request, pk=None):
     )
 
 
+def _course_override_state(user, profile):
+    base_courses = Course.objects.filter(class_group=profile.class_group) if profile.class_group_id else Course.objects.none()
+    base_ids = set(base_courses.values_list('id', flat=True))
+    required_ids = set(base_courses.filter(is_required=True).values_list('id', flat=True))
+    overrides = {
+        override.course_id: override.action
+        for override in CourseOverride.objects.filter(user=user)
+    }
+    selected_ids = (base_ids - {
+        course_id for course_id, action in overrides.items()
+        if action == CourseOverride.Action.DROP
+    }) | {
+        course_id for course_id, action in overrides.items()
+        if action == CourseOverride.Action.ADD
+    } | required_ids
+    return base_ids, required_ids, selected_ids, overrides
+
+
+@login_required
 def my_timetable(request):
+    if request.user.is_staff:
+        return redirect('class_index')
+    profile = Profile.objects.select_related('class_group', 'teacher').filter(user=request.user).first()
+    if profile is None:
+        return redirect('onboarding')
+    if profile.role == Profile.Role.TEACHER:
+        return redirect('teacher_timetable', pk=profile.teacher_id)
+
+    _, required_ids, selected_ids, _ = _course_override_state(request.user, profile)
     courses = Course.objects.select_related('class_group', 'teacher').prefetch_related(
         'slots__room', 'slots__period'
     )
@@ -162,6 +206,7 @@ def my_timetable(request):
                 'classId': course.class_group_id,
                 'className': course.class_group.name,
                 'teacher': course.teacher.name,
+                'isRequired': course.is_required,
                 'slots': [
                     {'day': s.weekday, 'period': s.period_id, 'room': s.room.name}
                     for s in course.slots.all()
@@ -169,11 +214,89 @@ def my_timetable(request):
             }
             for course in courses
         ],
+        'selectedIds': sorted(selected_ids),
+        'requiredIds': sorted(required_ids),
+        'defaultClassId': profile.class_group_id,
     }
     return render(
         request, 'schedule/my_timetable.html',
-        {'data': data, 'nav': 'my', 'today_date': timezone.localtime().date()},
+        {
+            'data': data,
+            'nav': 'my',
+            'today_date': timezone.localtime().date(),
+            'save_url': 'update_my_timetable',
+        },
     )
+
+
+@login_required
+def update_my_timetable(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': '請使用 POST 儲存課表。'}, status=405)
+    profile = Profile.objects.select_related('class_group').filter(
+        user=request.user, role=Profile.Role.STUDENT
+    ).first()
+    if profile is None:
+        return JsonResponse({'error': '請先完成學生身分設定。'}, status=403)
+
+    try:
+        requested_ids = {int(value) for value in request.POST.getlist('course_ids')}
+    except (TypeError, ValueError):
+        return JsonResponse({'error': '課程資料無效，請重新整理後再試。'}, status=400)
+
+    courses = Course.objects.filter(pk__in=requested_ids)
+    if courses.count() != len(requested_ids):
+        return JsonResponse({'error': '部分課程已不存在，請重新整理課表。'}, status=400)
+
+    base_courses = Course.objects.filter(class_group=profile.class_group) if profile.class_group_id else Course.objects.none()
+    base_ids = set(base_courses.values_list('id', flat=True))
+    required_ids = set(base_courses.filter(is_required=True).values_list('id', flat=True))
+    missing_required = required_ids - requested_ids
+    if missing_required:
+        return JsonResponse({'error': '必修課程不可退選，請保留所有必修課程。'}, status=400)
+
+    overlaps = {}
+    slots = Slot.objects.filter(course_id__in=requested_ids).select_related(
+        'course', 'period'
+    )
+    for slot in slots:
+        key = (slot.weekday, slot.period_id)
+        overlaps.setdefault(key, []).append(slot)
+    conflicts = [
+        {
+            'day': Weekday(key[0]).label,
+            'period': slots_in_cell[0].period.code,
+            'courses': [slot.course.name for slot in slots_in_cell],
+        }
+        for key, slots_in_cell in overlaps.items()
+        if len(slots_in_cell) > 1
+    ]
+    if conflicts:
+        return JsonResponse({
+            'error': '課表有時段衝突，請調整選課後再儲存。',
+            'conflicts': conflicts,
+        }, status=409)
+
+    current_overrides = {
+        override.course_id: override
+        for override in CourseOverride.objects.filter(user=request.user)
+    }
+    all_relevant_ids = base_ids | requested_ids | set(current_overrides)
+    with transaction.atomic():
+        for course_id in all_relevant_ids:
+            is_default = course_id in base_ids
+            is_selected = course_id in requested_ids or course_id in required_ids
+            if is_default == is_selected:
+                CourseOverride.objects.filter(user=request.user, course_id=course_id).delete()
+                continue
+            action = CourseOverride.Action.ADD if is_selected else CourseOverride.Action.DROP
+            CourseOverride.objects.update_or_create(
+                user=request.user,
+                course_id=course_id,
+                defaults={'action': action},
+            )
+
+    return JsonResponse({'ok': True, 'selectedIds': sorted(requested_ids)})
 
 @login_required
 def onboarding(request):
