@@ -2,6 +2,10 @@
   var forms = document.querySelectorAll('form[data-pending]');
 
   document.querySelectorAll('.auth-form').forEach(function (form) {
+    form.querySelectorAll('.auth-form__row, .auth-form__check, .auth-form__submit, .auth-form__aside').forEach(function (step, index) {
+      step.style.setProperty('--auth-delay', Math.min(index, 6) * 65 + 'ms');
+    });
+
     form.querySelectorAll('.auth-form__row').forEach(function (row, rowIndex) {
       var field = row.querySelector('input:not([type="hidden"]), select, textarea');
       var errors = row.querySelectorAll('.auth-form__error');
@@ -19,6 +23,25 @@
 
   var errorTarget = document.querySelector('.auth-form__error-summary, .auth-form__alert[role="alert"]');
   if (errorTarget) errorTarget.focus();
+  else {
+    var firstInvalidField = document.querySelector('.auth-form [aria-invalid="true"]');
+    if (firstInvalidField) firstInvalidField.focus();
+  }
+
+  var auth = document.querySelector('.auth');
+  if (auth) {
+    auth.addEventListener('click', function (event) {
+      var link = event.target.closest('.auth__foot a[data-auth-transition]');
+      if (!link || event.defaultPrevented || event.button !== 0
+        || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      var destination = new URL(link.href, window.location.href);
+      if (destination.origin !== window.location.origin) return;
+
+      event.preventDefault();
+      auth.classList.add('auth--leaving-' + link.dataset.authTransition);
+      window.setTimeout(function () { window.location.assign(destination.href); }, 290);
+    });
+  }
 
   function reset() {
     forms.forEach(function (form) {

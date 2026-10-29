@@ -52,5 +52,5 @@
 {% endblock %}
 
 {% block auth_foot %}
-  <p class="auth__foot">已經有帳號？<a href="{% url 'account_login' %}">登入</a></p>
+  <p class="auth__foot">已經有帳號？<a href="{% url 'account_login' %}" data-auth-transition="back">登入</a></p>
 {% endblock %}

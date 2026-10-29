@@ -21,7 +21,7 @@
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         </div>
       {% else %}
-        <div class="auth-form__row">
+        <div class="auth-form__row{% if field.errors %} auth-form__row--invalid{% endif %}">
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
           {% for error in field.errors %}
@@ -55,5 +55,5 @@
 {% endblock %}
 
 {% block auth_foot %}
-  <p class="auth__foot">還沒有帳號？<a href="{% url 'account_signup' %}">註冊</a></p>
+  <p class="auth__foot">還沒有帳號？<a href="{% url 'account_signup' %}" data-auth-transition="forward">註冊</a></p>
 {% endblock %}
