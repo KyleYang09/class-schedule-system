@@ -217,6 +217,7 @@
       );
       heading.append(el('span', '', `${day.number === today ? '今天・' : ''}${lessonCount} 節`));
       section.append(heading);
+      const content = el('div', 'agenda__content');
       const list = el('ol');
       data.periods.forEach((period) => {
         const entries = cells.get(`${day.number}-${period.id}`) || [];
@@ -234,8 +235,9 @@
           list.append(item);
         });
       });
-      if (list.childElementCount) section.append(list);
-      else section.append(el('p', 'agenda__empty', '今天沒有課程'));
+      if (list.childElementCount) content.append(list);
+      else content.append(el('p', 'agenda__empty', '今天沒有課程'));
+      section.append(content);
       agenda.append(section);
     });
     board.append(agenda);
@@ -298,7 +300,7 @@
     if (on) draft.add(id);
     else draft.delete(id);
     refreshCourseList();
-    renderDraftList();
+    renderDraftList(on ? id : null);
     renderPreview();
     renderFooter();
   }
@@ -355,13 +357,13 @@
     });
   }
 
-  function renderDraftList() {
+  function renderDraftList(enteringCourseId = null) {
     editor.draftList.replaceChildren();
     const ids = Array.from(draft);
     editor.draftEmpty.hidden = ids.length > 0;
     editor.clearButton.hidden = !ids.some((id) => !data.requiredIds.includes(id));
     ids.map((id) => courseById.get(id)).forEach((course) => {
-      const item = el('li');
+      const item = el('li', course.id === enteringCourseId ? 'is-entering' : '');
       const text = el('span');
       text.append(el('strong', '', course.name), el('small', '', `${course.className}・${course.teacher}・${slotText(course)}`));
       if (data.requiredIds.includes(course.id)) {
@@ -445,6 +447,9 @@
   async function saveEditor() {
     if (saving || editor.saveButton.disabled) return;
     saving = true;
+    const saveLabel = editor.saveButton.textContent;
+    editor.saveButton.textContent = '儲存中…';
+    editor.saveButton.setAttribute('aria-busy', 'true');
     renderFooter();
     const formData = new FormData(editor.form);
     draft.forEach((id) => formData.append('course_ids', id));
@@ -478,6 +483,8 @@
       editor.conflicts.hidden = false;
     } finally {
       saving = false;
+      editor.saveButton.textContent = saveLabel;
+      editor.saveButton.removeAttribute('aria-busy');
       renderFooter();
     }
   }
