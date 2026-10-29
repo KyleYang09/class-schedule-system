@@ -135,7 +135,17 @@ SOCIALACCOUNT_PROVIDERS = {
     },
 }
 
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
 EMAIL_BACKEND = os.environ.get(
-    'DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend'
+    'DJANGO_EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+    if EMAIL_HOST
+    else 'django.core.mail.backends.console.EmailBackend',
 )
-DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_FROM_EMAIL', 'noreply@localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', '1') == '1'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = (
+    os.environ.get('DJANGO_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@localhost'
+)

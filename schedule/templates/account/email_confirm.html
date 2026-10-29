@@ -1,0 +1,50 @@
+{% extends "account/auth_base.html" %}
+
+{% block auth_title %}確認信箱{% endblock %}
+
+{% block heading %}
+  {% if confirmation and can_confirm %}確認你的信箱
+  {% elif confirmation %}無法確認這個信箱
+  {% else %}連結無效或已過期{% endif %}
+{% endblock %}
+
+{% block lead %}
+  {% if confirmation and can_confirm %}按下按鈕後，就能用這個信箱登入
+  {% elif confirmation %}這個信箱已經被另一個帳號使用
+  {% else %}請重新取得驗證信{% endif %}
+{% endblock %}
+
+{% block auth_body %}
+  {% if confirmation and can_confirm %}
+    <p class="auth-email-label">要確認的信箱</p>
+    <p class="auth-email">{{ email }}</p>
+
+    <form class="auth-form" method="post" action="{% url 'account_confirm_email' confirmation.key %}" data-pending="確認中…">
+      {% csrf_token %}
+      {{ redirect_field }}
+      <button type="submit" class="btn auth-form__submit">確認信箱</button>
+    </form>
+  {% elif confirmation %}
+    <p class="auth-text">
+      <strong class="auth-email auth-email--inline">{{ email }}</strong>
+      已經由另一個帳號驗證過，無法再次使用。請改用其他信箱註冊，或登入原本的帳號。
+    </p>
+  {% else %}
+    <div class="auth-hint auth-hint--first">
+      <h2>可能的原因</h2>
+      <ul>
+        <li>連結已超過有效時間</li>
+        <li>連結已經使用過，信箱其實已完成驗證</li>
+        <li>複製連結時漏掉了結尾的一小段</li>
+      </ul>
+    </div>
+    <p class="auth-text">先試著登入。如果信箱還沒驗證，系統會再寄一封新的驗證信給你；短時間內只會寄一封，請稍等幾分鐘。</p>
+  {% endif %}
+{% endblock %}
+
+{% block auth_foot %}
+  <p class="auth__foot">
+    <a href="{% url 'account_login' %}">前往登入</a>
+    {% if not confirmation or not can_confirm %}<a href="{% url 'account_signup' %}">重新註冊</a>{% endif %}
+  </p>
+{% endblock %}

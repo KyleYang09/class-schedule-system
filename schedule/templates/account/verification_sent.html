@@ -1,0 +1,30 @@
+{% extends "account/auth_base.html" %}
+
+{% block auth_title %}驗證信箱{% endblock %}
+{% block heading %}請驗證你的信箱{% endblock %}
+{% block lead %}驗證信已寄出，完成驗證後才能登入{% endblock %}
+
+{% block auth_body %}
+  <ol class="auth-steps">
+    <li>開啟你註冊時填寫的信箱，找到來自本系統的信</li>
+    <li>點開信中的連結，按下「確認信箱」</li>
+    <li>回到登入頁，用信箱與密碼登入</li>
+  </ol>
+
+  <div class="auth-hint">
+    <h2>沒有收到信？</h2>
+    <ul>
+      <li>先檢查垃圾郵件匣，信件有時會被分到那裡</li>
+      <li>等待幾分鐘，信件可能稍有延遲</li>
+      <li>還是沒有的話，回到登入頁，用同一組信箱與密碼登入一次，系統會重新寄送。短時間內只會寄一封，請稍等幾分鐘</li>
+      <li>確認註冊時的信箱沒有打錯，打錯的話請重新註冊</li>
+    </ul>
+  </div>
+{% endblock %}
+
+{% block auth_foot %}
+  <p class="auth__foot">
+    <a href="{% url 'account_login' %}">前往登入</a>
+    <a href="{% url 'account_signup' %}">重新註冊</a>
+  </p>
+{% endblock %}
