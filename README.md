@@ -31,7 +31,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 python -m pip install -r requirements.txt
 ```
 
-### 4. 建立資料庫
+### 4. 建立本機資料庫
 
 ```powershell
 python manage.py migrate
@@ -41,13 +41,32 @@ python manage.py runserver
 
 `seed_demo_data` 會建立示範資料與開發用管理員帳號（只在 `DEBUG` 開啟時建立）。如果找不到這個指令，請向專案負責人確認名稱。
 
-`db.sqlite3` 不會被提交到 Git，所以每台電腦的資料庫都是獨立的。
+預設使用 SQLite，`db.sqlite3` 不會被提交到 Git，所以每台電腦的資料庫都是獨立的。若要讓正式網站上的所有使用者共用帳號，需讓部署中的 Django 使用同一個 PostgreSQL 資料庫；僅修改本機資料庫設定不會把既有 SQLite 帳號搬過去。
 
-### 5. 設定網站網域（每台電腦各做一次）
+### 5. 設定共用 PostgreSQL（部署環境）
+
+先在 PostgreSQL 託管服務建立資料庫，再於部署平台的環境變數中設定下列值。不要把真實密碼提交到 Git：
+
+```text
+DB_ENGINE=postgresql
+DB_NAME=資料庫名稱
+DB_USER=資料庫使用者
+DB_PASSWORD=資料庫密碼
+DB_HOST=資料庫主機
+DB_PORT=5432
+```
+
+`psycopg` 驅動已列在 `requirements.txt`。部署環境安裝套件後，執行 `python manage.py migrate` 建立資料表。所有網站執行個體都必須連到同一個資料庫，並使用同一個 Django `SECRET_KEY`；不要讓每個開發者的電腦連到正式帳號資料庫。
+
+目前本機 SQLite 的使用者不會因為切換 PostgreSQL 自動搬移。正式搬移前需先備份資料，並規劃一次性匯入；不要直接把 `db.sqlite3` 當成 PostgreSQL 資料庫檔案使用。
+
+其他網站或應用程式若也要用同一組登入身份，應透過中央登入/API（例如 OAuth / OpenID Connect）整合，不應把資料庫帳密交給每個應用程式直接讀取 Django 的使用者資料表。
+
+### 6. 設定網站網域（每台電腦各做一次）
 
 打開 `http://127.0.0.1:8000/admin/` → 網站，把唯一那筆紀錄的「網域名稱」與「顯示名稱」都改成 `127.0.0.1:8000`。驗證信裡的連結會用這個網域。
 
-### 6. 測試登入
+### 7. 測試登入
 
 - 登入頁：`http://127.0.0.1:8000/accounts/login/`
 - 註冊頁：`http://127.0.0.1:8000/accounts/signup/`
@@ -71,15 +90,21 @@ python manage.py runserver
 
 沒有設定也可以正常使用 Email 登入，只是 LINE 按鈕點了會出現 LINE 的錯誤頁。
 
-1. 到 LINE Developers Console 建立 Provider 與「LINE Login」Channel。
-2. Callback URL 填：`http://127.0.0.1:8000/accounts/line/login/callback/`
-3. 每次開新的終端機要重新設定環境變數（不要寫進程式碼，不要提交到 Git）：
+專案已安裝 `django-allauth` 的 LINE provider。到 LINE Developers Console 建立 Provider 和「LINE Login」Channel，確認 Channel 的 App type 包含 Web app，並在 LINE Login 設定頁加入 callback URL：
+
+```text
+http://127.0.0.1:8000/accounts/line/login/callback/
+```
+
+本機開發時，於啟動 Django 的 PowerShell 視窗設定環境變數（每個新終端機都要重新設定）：
 
    ```powershell
    $env:LINE_CHANNEL_ID = "你的 Channel ID"
    $env:LINE_CHANNEL_SECRET = "你的 Channel secret"
    python manage.py runserver
    ```
+
+正式環境要把 callback URL 換成部署網站的 HTTPS 網址，例如 `https://你的網域/accounts/line/login/callback/`，並在部署平台設定相同的兩個環境變數。Channel secret 不要貼到聊天、程式碼或 Git。LINE 登入目前要求 `profile` 與 `openid`，未要求 Email 權限，因此不可假設每個 LINE 帳號都會提供 Email。Email 相同也不會自動合併既有帳號；安全的帳號綁定流程應要求使用者先登入原帳號，再從帳號設定連結 LINE。
 
 ## 更新程式碼之後
 
