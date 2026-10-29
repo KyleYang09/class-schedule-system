@@ -10,6 +10,7 @@ urlpatterns = [
     path('classes/<int:pk>/', views.class_timetable, name='class_timetable'),
     path('teachers/', views.teacher_timetable, name='teacher_index'),
     path('teachers/<int:pk>/', views.teacher_timetable, name='teacher_timetable'),
+    path('welcome/', views.onboarding, name='onboarding'),
     path("han/", views.py_han, name="py_han"),
     path("hsin/", views.py_hsin, name="py_hsin"),
     path("hy/", views.py_hy, name="py_hy"),

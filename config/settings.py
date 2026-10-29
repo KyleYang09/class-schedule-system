@@ -149,3 +149,5 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = (
     os.environ.get('DJANGO_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@localhost'
 )
+
+LOGIN_REDIRECT_URL = 'onboarding'

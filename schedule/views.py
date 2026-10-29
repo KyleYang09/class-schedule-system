@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta
 
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from .models import ClassGroup, Course, Period, Slot, Teacher, Weekday
+from .forms import OnboardingForm
+from .models import ClassGroup, Course, Period, Profile, Slot, Teacher, Weekday
 
 FILL_COUNT = 4
 TILE_HEIGHT = 100
@@ -129,7 +132,7 @@ def class_timetable(request, pk=None):
 
 def teacher_timetable(request, pk=None):
     return _timetable_page(
-        request, pk, Teacher.objects.all(), 'teacher',
+        request, pk, Teacher.objects.filter(is_approved=True), 'teacher',
         lambda slot: slot.class_group.name, 'teacher',
     )
 
@@ -171,6 +174,23 @@ def my_timetable(request):
         request, 'schedule/my_timetable.html',
         {'data': data, 'nav': 'my', 'today_date': timezone.localtime().date()},
     )
+
+@login_required
+def onboarding(request):
+    if request.user.is_staff or Profile.objects.filter(user=request.user).exists():
+        return redirect('my_timetable')
+    form = OnboardingForm(request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            form.save(request.user)
+        except IntegrityError:
+            if Profile.objects.filter(user=request.user).exists():
+                return redirect('my_timetable')
+            form.add_error(None, '儲存時發生衝突，請再試一次')
+        else:
+            return redirect('my_timetable')
+    return render(request, 'schedule/onboarding.html', {'form': form})
+
 
 def py_han(request):
     return render(request, "schedule/py_han.html", {"nav": "han"})

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -24,6 +25,11 @@ class ClassGroup(models.Model):
 
 class Teacher(models.Model):
     name = models.CharField('教師', max_length=50, unique=True)
+    is_approved = models.BooleanField('已核准', default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_teachers', editable=False, verbose_name='建立者',
+    )
 
     class Meta:
         ordering = ['name']
@@ -157,3 +163,40 @@ class Slot(models.Model):
     def save(self, *args, **kwargs):
         self.sync_owner()
         super().save(*args, **kwargs)
+
+
+class Profile(models.Model):
+    class Role(models.TextChoices):
+        STUDENT = 'student', '學生'
+        TEACHER = 'teacher', '老師'
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile', verbose_name='使用者'
+    )
+    role = models.CharField('身分', max_length=10, choices=Role)
+    class_group = models.ForeignKey(
+        ClassGroup, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='profiles', verbose_name='班級',
+    )
+    teacher = models.ForeignKey(
+        Teacher, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='profiles', verbose_name='教師',
+    )
+    created_at = models.DateTimeField('建立時間', auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = verbose_name_plural = '使用者資料'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(role='student', teacher__isnull=True)
+                    | models.Q(role='teacher', class_group__isnull=True, teacher__isnull=False)
+                ),
+                name='profile_role_matches_link',
+                violation_error_message='學生不能綁定教師，老師必須綁定教師且不能綁定班級',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user}　{self.get_role_display()}'

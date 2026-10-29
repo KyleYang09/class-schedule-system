@@ -1,0 +1,65 @@
+{% extends "account/auth_base.html" %}
+{% load assets %}
+
+{% block auth_title %}基本設定{% endblock %}
+{% block heading %}歡迎使用{% endblock %}
+{% block lead %}先完成基本設定，只需要做這一次{% endblock %}
+
+{% block auth_body %}
+  <form class="auth-form" method="post" action="{% url 'onboarding' %}" data-pending="儲存中…" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="auth-form__alert" role="alert">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <fieldset class="choice-group">
+      <legend>你的身分</legend>
+      <div class="choice-list">
+        {% for radio in form.role %}
+          <label class="choice">
+            {{ radio.tag }}
+            <span class="choice__body">
+              <strong>{{ radio.choice_label }}</strong>
+              <small>{% if radio.data.value == 'student' %}自動帶入班級課表{% else %}查看你的授課{% endif %}</small>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+      {% for error in form.role.errors %}<p class="auth-form__error">{{ error }}</p>{% endfor %}
+    </fieldset>
+
+    <div class="auth-section" data-role-section="student" hidden>
+      <div class="auth-form__row">
+        <label for="{{ form.class_choice.id_for_label }}">你的班級</label>
+        {{ form.class_choice }}
+        {% for error in form.class_choice.errors %}<p class="auth-form__error">{{ error }}</p>{% endfor %}
+        <div class="auth-form__help">不在列表中（外校或其他）也可以，之後自己加課。</div>
+      </div>
+    </div>
+
+    <div class="auth-section" data-role-section="teacher" hidden>
+      <div class="auth-form__row">
+        <label for="{{ form.teacher_choice.id_for_label }}">你的姓名</label>
+        {{ form.teacher_choice }}
+        {% for error in form.teacher_choice.errors %}<p class="auth-form__error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="auth-form__row" data-new-teacher hidden>
+        <label for="{{ form.new_teacher_name.id_for_label }}">新增你的姓名</label>
+        {{ form.new_teacher_name }}
+        {% for error in form.new_teacher_name.errors %}<p class="auth-form__error">{{ error }}</p>{% endfor %}
+        <div class="auth-form__help">新增的姓名需要管理員核准後，才會出現在公開的教師課表。</div>
+      </div>
+    </div>
+
+    <p class="auth-note">送出後無法自行修改，如需變更請聯絡管理員。</p>
+
+    <button type="submit" class="btn auth-form__submit">確認並開始使用</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% asset 'schedule/js/onboarding.js' %}"></script>
+{% endblock %}

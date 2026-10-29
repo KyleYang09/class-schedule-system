@@ -91,7 +91,7 @@ python manage.py runserver
 
 ### 6. 設定寄信（方法 A：`setx`）
 
-Django 使用 `config.settings`。預設只把信印在終端機；設定 `EMAIL_HOST` 後會切換到 SMTP，並讀取 `EMAIL_PORT`（預設 `587`）、`EMAIL_USE_TLS`（預設開啟）、`EMAIL_HOST_USER` 和 `EMAIL_HOST_PASSWORD`。`DEFAULT_FROM_EMAIL` 預設使用 `EMAIL_HOST_USER`。
+Django 預設只把信印在終端機。設定了 `EMAIL_HOST` 之後，才會用 SMTP 真的寄出。
 
 先到 Google 帳戶開啟「兩步驟驗證」，再到「應用程式密碼」建立一組 16 碼密碼（不是你平常登入 Google 的密碼）。依 [Gmail SMTP 限制說明](https://serversmtp.com/limits-of-gmail-smtp-server/)，一般 Gmail 帳號每天上限為 500 位收件人。
 
@@ -128,23 +128,13 @@ reg delete HKCU\Environment /v EMAIL_HOST /f
 
 ### 7. 測試寄信與登入
 
-先確認 Django 有讀到 SMTP 設定，再單獨測試寄信，不用走完註冊流程：
-
-這個指令使用目前 PowerShell 環境中的設定。若使用 `$env:` 設定變數，請在同一個視窗執行測試和 `runserver`；若使用 `setx`，需另開 PowerShell。確認目前 Django 讀到的設定（不會顯示密碼）：
-
-```powershell
-python manage.py shell -c "from django.conf import settings; print('backend:', settings.EMAIL_BACKEND); print('host:', settings.EMAIL_HOST); print('user:', settings.EMAIL_HOST_USER); print('password set:', bool(settings.EMAIL_HOST_PASSWORD))"
-```
-
-應看到 SMTP backend、`smtp.gmail.com`、寄件帳號及 `password set: True`。接著寄測試信：
+先單獨測試寄信，不用走完註冊流程：
 
 ```powershell
 python manage.py sendtestemail 你要收信的信箱@example.com
 ```
 
-SMTP 測試指令沒有錯誤只表示 SMTP 接受了寄送要求；請到寄件帳號的「寄件備份」確認是否有新信，也檢查收件匣、垃圾郵件匣及「所有郵件」。
-
-註冊後的「驗證信已寄出」頁面不保證每次都真的寄信。若該信箱已存在帳號，allauth 可能為避免洩漏帳號是否存在而顯示相同頁面；同一信箱重複註冊不會建立第二個帳號。開發時可在 admin 確認使用者和「電子郵件地址」紀錄；若刪除未驗證帳號後要重試，確認使用者及其 EmailAddress 紀錄都已刪除，再重新註冊。
+沒有出現錯誤、收件匣（或垃圾郵件匣）收到信，就代表設定正確。
 
 再用瀏覽器測試：
 
@@ -152,6 +142,26 @@ SMTP 測試指令沒有錯誤只表示 SMTP 接受了寄送要求；請到寄件
 - 註冊頁：`http://127.0.0.1:8000/accounts/signup/`
 
 **驗證信裡的連結網域是 `127.0.0.1:8000`，只有這台電腦能開。** 用手機點信裡的連結會打不開，請在同一台電腦開信件並點連結。要讓手機也能用，必須先部署到公開網址。
+
+## 登入後的流程（引導頁）
+
+第一次登入（Email 或 LINE）後，會先進入 `/welcome/` 選擇身分：
+
+- **學生**：選擇班級，或選「我不在列表中」（外校或其他）。
+- **老師**：從清單選擇自己的姓名；找不到可以自己新增，新增的姓名要管理員在 admin 的「教師」頁面勾選後按「核准選取的教師」，才會出現在公開的教師課表。
+
+設定完成後使用者無法自行修改，管理員可以在 admin 的「使用者資料」修改。管理員（staff）帳號會略過這一頁。
+
+要測試這個流程，請用**一般帳號**註冊並驗證信箱（不要用 `createsuperuser` 建立的管理員）。
+
+資料表有異動時，記得執行：
+
+```powershell
+python manage.py makemigrations schedule
+python manage.py migrate
+```
+
+遷移檔請由**一個人**產生並提交到 Git，其他人 pull 之後只要 `migrate`。
 
 ## 沒有設定寄信時：驗證信解碼
 
@@ -242,7 +252,6 @@ python -m pip freeze > requirements.txt
 | `ConnectionRefusedError`、`TimeoutError` 或連線被拒 | 網路擋住了連接埠 587（常見於學校或公司網路） | 換一個網路（例如手機熱點）再試 |
 | `socket.gaierror` / 找不到主機 | `EMAIL_HOST` 打錯，或沒有網路 | 確認是 `smtp.gmail.com`，並檢查網路連線 |
 | 寄信成功但收不到 | 進了垃圾郵件匣，或信箱打錯 | 檢查垃圾郵件匣；確認註冊時的信箱沒有打錯 |
-| 註冊頁顯示「驗證信已寄出」，但沒有新信 | 這個提示可能是 allauth 為避免洩漏帳號是否存在而顯示；也可能仍有既有帳號或驗證信紀錄 | 在 admin 檢查使用者與「電子郵件地址」；確認 SMTP 測試成功後再註冊。不要只依頁面提示判斷郵件已送出 |
 | 手機點驗證連結打不開 | 連結網域是 `127.0.0.1:8000`，只有這台電腦能開 | 在同一台電腦開信件並點連結；要讓手機可用，需先部署到公開網址 |
 | 驗證信主旨是 `[example.com]` 或 `[127.0.0.1:8000]` | admin 的「網站」顯示名稱沒改 | 見步驟 5 |
 | 驗證信連結打開後是 404 | 複製到多餘的字元（例如結尾的 `HTTP/1.1`），或連結被換行拆開 | 只複製 `http` 開頭到結尾 `/` 為止的整行；終端機模式請見「驗證信解碼」 |
