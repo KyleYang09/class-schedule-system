@@ -105,14 +105,49 @@ setx EMAIL_HOST_USER "你的帳號@gmail.com"
 setx EMAIL_HOST_PASSWORD "16碼應用程式密碼"
 ```
 
-**重要：`setx` 只對「之後新開」的終端機生效，目前已開的終端機和 VS Code 都不會有。**
-請把 VS Code 整個關掉（所有視窗）再重開，或另外開一個新的 PowerShell 視窗，然後確認設定有生效：
+**重要：`setx` 只對「之後新開」的終端機生效，目前已開的終端機和 VS Code 都不會自動取得新設定。**
+
+先把 VS Code 整個關掉（所有視窗）再重開，或另外開一個新的 PowerShell 視窗。確認設定有生效：
 
 ```powershell
 Get-ChildItem Env:EMAIL*
 ```
 
 應該會列出 `EMAIL_HOST`、`EMAIL_HOST_USER`、`EMAIL_HOST_PASSWORD`。
+
+#### 如果 `Get-ChildItem Env:EMAIL*` 沒有任何輸出
+
+先確認 Windows 使用者環境變數是否已儲存。以下指令不會顯示密碼：
+
+```powershell
+[Environment]::GetEnvironmentVariable("EMAIL_HOST", "User")
+[Environment]::GetEnvironmentVariable("EMAIL_HOST_USER", "User")
+if ([string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable("EMAIL_HOST_PASSWORD", "User"))) { "EMAIL_HOST_PASSWORD 尚未設定" } else { "EMAIL_HOST_PASSWORD 已設定" }
+```
+
+如果上面查得到設定，但目前的 PowerShell 仍查不到 `Env:EMAIL*`，可以把 Windows 已儲存的值載入**目前這個 PowerShell 工作階段**，不用重新執行 `setx`：
+
+```powershell
+$env:EMAIL_HOST = [Environment]::GetEnvironmentVariable("EMAIL_HOST", "User")
+$env:EMAIL_HOST_USER = [Environment]::GetEnvironmentVariable("EMAIL_HOST_USER", "User")
+$env:EMAIL_HOST_PASSWORD = [Environment]::GetEnvironmentVariable("EMAIL_HOST_PASSWORD", "User")
+```
+
+再確認是否成功：
+
+```powershell
+Get-ChildItem Env:EMAIL*
+```
+
+這個載入方式只對目前的 PowerShell 工作階段及其啟動的子程序生效；關閉終端機後，下一個工作階段需要重新載入，或直接開啟新的終端機讓 Windows 提供已儲存的設定。
+
+**如果 `runserver` 已經在執行，載入環境變數後要先按 `Ctrl+C` 停止，再重新啟動：**
+
+```powershell
+python manage.py runserver
+```
+
+Django 只會讀取啟動它的 Python 程序所取得的環境變數，因此只在另一個終端機設定或載入變數，不會自動更新已經執行中的 `runserver`。
 
 **改回「只印在終端機」（不寄信）：**
 
@@ -253,7 +288,7 @@ python manage.py migrate
 
 | 症狀 | 原因 | 解法 |
 |---|---|---|
-| 設定了 `setx` 卻還是只印在終端機 | `setx` 只對新開的終端機生效 | 關閉所有 VS Code 視窗再重開，用 `Get-ChildItem Env:EMAIL*` 確認有值 |
+| 設定了 `setx` 卻還是只印在終端機 | 目前的 PowerShell 沒有取得新環境變數，或 `runserver` 還在使用舊的環境 | 先用 `[Environment]::GetEnvironmentVariable("EMAIL_HOST", "User")` 檢查；若已儲存但目前終端機查不到，依步驟 6 載入目前 PowerShell，再按 `Ctrl+C` 停止並重新執行 `python manage.py runserver` |
 | `SMTPAuthenticationError`，訊息含 `Username and Password not accepted` 或 `Application-specific password required` | 用了平常的 Google 密碼，或沒開兩步驟驗證 | 開啟兩步驟驗證，建立「應用程式密碼」，用它重新 `setx EMAIL_HOST_PASSWORD`（去掉空格） |
 | `SMTPSenderRefused` 或 `Authentication Required` | 設了 `EMAIL_HOST`，但沒有設帳號或密碼 | 三個變數要一起設定：`EMAIL_HOST`、`EMAIL_HOST_USER`、`EMAIL_HOST_PASSWORD`；或把 `EMAIL_HOST` 清空改回印出模式 |
 | `ConnectionRefusedError`、`TimeoutError` 或連線被拒 | 網路擋住了連接埠 587（常見於學校或公司網路） | 換一個網路（例如手機熱點）再試 |
