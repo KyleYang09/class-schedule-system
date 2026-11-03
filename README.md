@@ -67,7 +67,13 @@ python -c "import allauth; print(allauth.__version__)"
 python -c "import dotenv; print('dotenv OK')"
 ```
 
-有印出 `dotenv OK` 才繼續。如果出現 `ModuleNotFoundError: No module named 'dotenv'`，見疑難排解。
+有印出 `dotenv OK` 才繼續。如果出現 `ModuleNotFoundError: No module named 'dotenv'`，代表 `requirements.txt` 還沒包含它，先手動安裝：
+
+```powershell
+python -m pip install python-dotenv
+```
+
+裝完再執行一次上面的確認指令。同時請專案負責人把 `python-dotenv` 加進 `requirements.txt` 並提交，之後新電腦跑完步驟 3 就不用再手動安裝。
 
 ### 4. 建立資料庫、示範資料、管理員帳號
 
