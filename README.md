@@ -10,8 +10,9 @@ Django 專案：班級與教師課表查詢、我的課表、Email 與 LINE 登�
 | `requirements.txt` | 建立資料庫（`migrate`）、示範資料、管理員帳號 |
 | | 修改 admin 的「網站」網域 |
 | | 寄信與 LINE 的金鑰（環境變數，見下方） |
+| | 專案根目錄的 `.env` 檔（用 `.env` 設定寄信時需要，見步驟 6 方法 B） |
 
-金鑰與密碼**絕對不要**寫進程式碼或提交到 Git。每個人請各自申請自己的 Gmail 應用程式密碼，不要共用。
+金鑰與密碼**絕對不要**寫進程式碼或提交到 Git。每個人請各自申請自己的 Gmail 應用程式密碼，不要共用。`.env` 內含密碼，必須列入 `.gitignore`，不要提交、不要貼到聊天或截圖。
 
 本 README 的指令用於本機開發。專案目前預設 `DEBUG=1`，內建的 `SECRET_KEY` 也只是開發用；不要直接以這些預設值公開部署。
 
@@ -24,7 +25,7 @@ Django 專案：班級與教師課表查詢、我的課表、Email 與 LINE 登�
 - [ ] 3. 安裝套件
 - [ ] 4. 建立資料庫、示範資料、管理員帳號
 - [ ] 5. 設定網站網域
-- [ ] 6. 設定寄信（`setx`）並**重開終端機**
+- [ ] 6. 設定寄信（`setx` 或 `.env` 擇一）；用 `setx` 要**重開終端機**
 - [ ] 7. 測試寄信與登入
 
 ### 1. 取得程式碼
@@ -59,6 +60,14 @@ python -c "import allauth; print(allauth.__version__)"
 ```
 
 有印出版本號才繼續。
+
+`config/settings.py` 也會用 `python-dotenv` 讀取 `.env`，缺少它的話連 `migrate` 都會失敗，一併確認：
+
+```powershell
+python -c "import dotenv; print('dotenv OK')"
+```
+
+有印出 `dotenv OK` 才繼續。如果出現 `ModuleNotFoundError: No module named 'dotenv'`，見疑難排解。
 
 ### 4. 建立資料庫、示範資料、管理員帳號
 
@@ -163,6 +172,34 @@ reg delete HKCU\Environment /v EMAIL_HOST /f
 
 **注意：** `setx` 把值存在這台電腦的使用者設定裡，只有你的 Windows 帳號看得到。不要在共用電腦上這樣做，離開前請刪除。
 
+### 6. 設定寄信（方法 B：`.env` 檔案）
+
+`config/settings.py` 開頭會呼叫 `python-dotenv` 的 `load_dotenv()`，自動讀取專案根目錄的 `.env`。用這個方法不需要 `setx`，也不用重開終端機。**方法 A 與方法 B 擇一即可。**
+
+在專案根目錄（和 `manage.py` 同一層）用 VS Code 建立檔名剛好是 `.env` 的檔案（不是 `.env.txt`），內容如下：
+
+```
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=你的帳號@gmail.com
+EMAIL_HOST_PASSWORD=16碼應用程式密碼
+```
+
+- 等號兩邊**不要有空格**，值不需要加引號；應用程式密碼請去掉空格。
+- 每台電腦各自建立自己的 `.env`，不要共用，也不要提交到 Git。確認 `.gitignore` 有一行 `.env`，並用 `git status` 檢查它沒有出現在待提交清單。
+- 修改 `.env` 後，要在執行 `runserver` 的終端機按 `Ctrl+C` 停止，再重新執行 `python manage.py runserver`，新設定才會生效。
+- **系統環境變數優先於 `.env`。** `load_dotenv()` 預設不會覆蓋已存在的同名變數，所以如果之前用 `setx` 設過 `EMAIL_HOST` 等值，`.env` 裡的同名設定會被忽略。要改用 `.env`，請先用 `reg delete HKCU\Environment /v EMAIL_HOST /f` 清掉 `setx` 的值（`EMAIL_HOST_USER`、`EMAIL_HOST_PASSWORD` 同理），再重開終端機。
+
+確認設定有生效（不會顯示密碼）：
+
+```powershell
+python manage.py shell -c "from django.conf import settings; print(settings.EMAIL_BACKEND)"
+```
+
+印出 `django.core.mail.backends.smtp.EmailBackend` 代表會用 SMTP 寄信；印出 `django.core.mail.backends.console.EmailBackend` 代表仍只印在終端機。
+
+**改回「只印在終端機」（不寄信）：** 把 `.env` 裡的 `EMAIL_HOST` 那一行刪除或留空，再重啟 `runserver`。
+
 ### 7. 測試寄信與登入
 
 先單獨測試寄信，不用走完註冊流程：
@@ -260,6 +297,7 @@ python manage.py migrate
 | `IndentationError: unexpected indent`，指向檔案第一行 | 貼進檔案的程式碼前面多了空白（從有縮排的清單複製） | 在該行開頭按 Backspace，讓 `from` 或 `import` 貼齊最左邊；或全選刪除後重貼 |
 | `ModuleNotFoundError: No module named 'allauth'`（或其他套件） | 這台電腦還沒安裝套件，或沒有啟用 `.venv` | 確認提示字元有 `(.venv)`，再執行 `python -m pip install -r requirements.txt` |
 | 安裝完 `requirements.txt` 仍找不到 `allauth` | `requirements.txt` 是安裝 allauth 之前產生的舊版 | 在檔案加一行 `django-allauth[socialaccount]==65.21.0`，重新安裝，並提交 |
+| `ModuleNotFoundError: No module named 'dotenv'`，指向 `config/settings.py` 的 `from dotenv import load_dotenv`（`migrate`、`runserver` 等任何指令都會失敗） | `settings.py` 用 `python-dotenv` 讀取 `.env`，但這個 `.venv` 沒有安裝，或 `requirements.txt` 漏列 | 確認提示字元有 `(.venv)`，執行 `python -m pip install python-dotenv`；再把 `python-dotenv` 加進 `requirements.txt`（可加版本範圍）並提交，其他電腦就不會再遇到 |
 | `Activate.ps1` 無法執行，顯示被系統停用 | PowerShell 執行原則 | `Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned` |
 | 安裝套件時卡住或出現 `KeyboardInterrupt` | 被中斷，或防毒軟體掃描拖慢 | 一次只執行一行並等它跑完；仍失敗就刪除 `.venv` 後重建（步驟 2、3） |
 | 安裝某個套件時編譯失敗 | 這台電腦的 Python 版本和別人不同（例如 3.13 與 3.14） | 把完整錯誤訊息貼給專案負責人；或改用與其他人相同的 Python 版本 |
@@ -289,6 +327,7 @@ python manage.py migrate
 | 症狀 | 原因 | 解法 |
 |---|---|---|
 | 設定了 `setx` 卻還是只印在終端機 | 目前的 PowerShell 沒有取得新環境變數，或 `runserver` 還在使用舊的環境 | 先用 `[Environment]::GetEnvironmentVariable("EMAIL_HOST", "User")` 檢查；若已儲存但目前終端機查不到，依步驟 6 載入目前 PowerShell，再按 `Ctrl+C` 停止並重新執行 `python manage.py runserver` |
+| 設定了 `.env` 卻還是只印在終端機 | `.env` 不在專案根目錄、檔名不是剛好 `.env`（例如 `.env.txt`）、`runserver` 沒有重啟，或系統已有同名環境變數（優先於 `.env`） | 確認 `.env` 和 `manage.py` 在同一層；重啟 `runserver`；執行 `python manage.py shell -c "from django.conf import settings; print(settings.EMAIL_BACKEND)"` 檢查；若之前用過 `setx`，見步驟 6 方法 B 的優先順序說明 |
 | `SMTPAuthenticationError`，訊息含 `Username and Password not accepted` 或 `Application-specific password required` | 用了平常的 Google 密碼，或沒開兩步驟驗證 | 開啟兩步驟驗證，建立「應用程式密碼」，用它重新 `setx EMAIL_HOST_PASSWORD`（去掉空格） |
 | `SMTPSenderRefused` 或 `Authentication Required` | 設了 `EMAIL_HOST`，但沒有設帳號或密碼 | 三個變數要一起設定：`EMAIL_HOST`、`EMAIL_HOST_USER`、`EMAIL_HOST_PASSWORD`；或把 `EMAIL_HOST` 清空改回印出模式 |
 | `ConnectionRefusedError`、`TimeoutError` 或連線被拒 | 網路擋住了連接埠 587（常見於學校或公司網路） | 換一個網路（例如手機熱點）再試 |
